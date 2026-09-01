@@ -147,6 +147,7 @@ export function WorkbenchShell() {
         aiAvailable={aiAvailable}
         onClose={() => useWorkbench.getState().setSettingsOpen(false)}
         onClearChat={() => useWorkbench.getState().clearChat()}
+        onProbe={() => void useWorkbench.getState().probe()}
       />
       <input
         ref={fileRef}

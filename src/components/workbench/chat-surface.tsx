@@ -115,7 +115,7 @@ export function ChatSurface({
             }}
           />
           <div className="mt-2 flex items-center justify-between gap-3">
-            <p className="text-xs text-muted">Enter to send · Shift+Enter for a new line</p>
+            <p className="text-xs text-muted">Tap Send · there is no try limit</p>
             <Button type="submit" disabled={!input.trim() || busy} className="min-h-11 min-w-28">
               {busy ? "Working" : "Send"}
             </Button>

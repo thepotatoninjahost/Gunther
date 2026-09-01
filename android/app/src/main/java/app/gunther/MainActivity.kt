@@ -18,7 +18,7 @@ import java.io.ByteArrayInputStream
 class MainActivity : ComponentActivity() {
     private lateinit var webView: WebView
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint("SetJavaScriptEnabled", "AddJavascriptInterface")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WebView.setWebContentsDebuggingEnabled(true)
@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
             isFocusable = true
             isFocusableInTouchMode = true
             webChromeClient = WebChromeClient()
+            addJavascriptInterface(GuntherBridge(this@MainActivity, this), "GuntherNative")
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(
                     view: WebView,
