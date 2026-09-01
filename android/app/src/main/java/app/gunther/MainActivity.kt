@@ -1,9 +1,12 @@
 package app.gunther
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.view.ViewGroup
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -11,12 +14,48 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
+import org.json.JSONObject
 import java.io.ByteArrayInputStream
+import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
     private lateinit var webView: WebView
+    private var htmlFileCallback: ValueCallback<Array<Uri>>? = null
+
+    private val filePicker =
+        registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+            val callback = htmlFileCallback
+            htmlFileCallback = null
+            if (callback != null) {
+                callback.onReceiveValue(if (uris.isNullOrEmpty()) null else uris.toTypedArray())
+                return@registerForActivityResult
+            }
+            if (uris.isNullOrEmpty()) {
+                toast("No files selected")
+                return@registerForActivityResult
+            }
+            thread { pushUris(uris) }
+        }
+
+    private val folderPicker =
+        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            if (uri == null) {
+                toast("No folder selected")
+                return@registerForActivityResult
+            }
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            } catch (_: Exception) {
+            }
+            thread { pushTree(uri) }
+        }
 
     @SuppressLint("SetJavaScriptEnabled", "AddJavascriptInterface")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,7 +82,18 @@ class MainActivity : ComponentActivity() {
             settings.cacheMode = WebSettings.LOAD_NO_CACHE
             isFocusable = true
             isFocusableInTouchMode = true
-            webChromeClient = WebChromeClient()
+            webChromeClient = object : WebChromeClient() {
+                override fun onShowFileChooser(
+                    webView: WebView,
+                    filePathCallback: ValueCallback<Array<Uri>>,
+                    fileChooserParams: FileChooserParams,
+                ): Boolean {
+                    htmlFileCallback?.onReceiveValue(null)
+                    htmlFileCallback = filePathCallback
+                    filePicker.launch(arrayOf("*/*"))
+                    return true
+                }
+            }
             addJavascriptInterface(GuntherBridge(this@MainActivity, this), "GuntherNative")
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(
@@ -92,6 +142,42 @@ class MainActivity : ComponentActivity() {
                 }
             },
         )
+    }
+
+    fun openFolderPicker() {
+        folderPicker.launch(null)
+    }
+
+    fun openFilePicker() {
+        filePicker.launch(arrayOf("*/*"))
+    }
+
+    private fun pushTree(uri: Uri) {
+        val (name, files) = ProjectImport.fromTree(this, uri)
+        deliver(name, files)
+    }
+
+    private fun pushUris(uris: List<Uri>) {
+        val files = ProjectImport.fromUris(this, uris)
+        deliver("imported", files)
+    }
+
+    private fun deliver(name: String, files: JSONObject) {
+        val count = files.length()
+        runOnUiThread {
+            if (count == 0) {
+                toast("No text files in that pick")
+                return@runOnUiThread
+            }
+            toast("Imported $count file(s)")
+            val script =
+                "window.__guntherImport && window.__guntherImport(${JSONObject.quote(name)}, $files);"
+            webView.evaluateJavascript(script, null)
+        }
+    }
+
+    private fun toast(message: String) {
+        runOnUiThread { Toast.makeText(this, message, Toast.LENGTH_SHORT).show() }
     }
 
     private fun serveAsset(path: String): WebResourceResponse {

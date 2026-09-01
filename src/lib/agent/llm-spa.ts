@@ -30,10 +30,13 @@ declare global {
       hasKey: () => boolean;
       setApiKey: (key: string) => void;
       clearApiKey: () => void;
+      pickFolder: () => void;
+      pickFiles: () => void;
       complete: (requestId: string, payloadJson: string) => void;
     };
     __guntherNativeDone?: (requestId: string, result: NativeResult) => void;
     __guntherWait?: Record<string, (result: NativeResult) => void>;
+    __guntherImport?: (name: string, files: Record<string, string>) => void;
   }
 }
 

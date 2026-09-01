@@ -35,12 +35,31 @@ export function WorkbenchShell() {
   const settingsOpen = useWorkbench((s) => s.settingsOpen);
   const instructionSheet = useWorkbench((s) => s.instructionSheet);
 
+  const openImport = () => {
+    if (window.GuntherNative?.pickFolder) {
+      window.GuntherNative.pickFolder();
+      return;
+    }
+    fileRef.current?.click();
+  };
+
+
   useEffect(() => {
     void (async () => {
       await useWorkbench.persist.rehydrate();
       useWorkbench.getState().hydrateEngine();
       await useWorkbench.getState().probe();
     })();
+  }, []);
+
+  useEffect(() => {
+    window.__guntherImport = (name, incoming) => {
+      if (!incoming || !Object.keys(incoming).length) return;
+      useWorkbench.getState().importFiles(incoming, name);
+    };
+    return () => {
+      delete window.__guntherImport;
+    };
   }, []);
 
   useEffect(() => {
@@ -76,7 +95,7 @@ export function WorkbenchShell() {
           modelStatus={modelStatus}
           running={running}
           onNew={() => useWorkbench.getState().newProject()}
-          onImport={() => fileRef.current?.click()}
+          onImport={openImport}
           onSettings={() => useWorkbench.getState().setSettingsOpen(true)}
           onStop={() => useWorkbench.getState().stop()}
         />
@@ -99,7 +118,7 @@ export function WorkbenchShell() {
             pending={pending[0] ?? null}
             onApprove={() => void useWorkbench.getState().approve()}
             onLoadSample={() => useWorkbench.getState().loadSample()}
-            onImport={() => fileRef.current?.click()}
+            onImport={openImport}
             fileCount={Object.keys(files).length}
           />
         ) : null}

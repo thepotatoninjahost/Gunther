@@ -13,10 +13,10 @@ import java.net.URL
 import kotlin.concurrent.thread
 
 class GuntherBridge(
-    context: Context,
+    private val activity: MainActivity,
     private val webView: WebView,
 ) {
-    private val prefs: SharedPreferences = securePrefs(context)
+    private val prefs: SharedPreferences = securePrefs(activity)
 
     @JavascriptInterface
     fun hasKey(): Boolean = !prefs.getString(KEY, "").isNullOrBlank()
@@ -29,6 +29,16 @@ class GuntherBridge(
     @JavascriptInterface
     fun clearApiKey() {
         prefs.edit().remove(KEY).apply()
+    }
+
+    @JavascriptInterface
+    fun pickFolder() {
+        activity.runOnUiThread { activity.openFolderPicker() }
+    }
+
+    @JavascriptInterface
+    fun pickFiles() {
+        activity.runOnUiThread { activity.openFilePicker() }
     }
 
     @JavascriptInterface
