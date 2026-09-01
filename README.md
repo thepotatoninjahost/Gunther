@@ -1,21 +1,51 @@
 # Gunther
 
-Model-agnostic coding-agent runtime.
+Evidence-first coding agent. Chat, files, dual-approval review, terminal, and local research — in the browser.
 
-- **Android** (this directory) — Kotlin shell. Chat, tools, workspace, on-device or cloud backends.
-- **[Web workbench](web/)** — browser runtime with a single shared workspace, sealed mutation results, dual-approval writes, and a chunked local handbook.
+## What this is
 
-## Android
+A single shared workspace drives every mutation. Proposed writes come back as **accepted** or **rejected** (never a crash). Writes need **two owner confirmations**. The xAI key lives only on the server — never in the browser.
 
-Open the project in Android Studio and run the `app` module.
+Offline-first: list, read, verify, terminal, local handbook search, and starter patches work without a model. When the gateway has credits, the agent loop uses typed tool calls.
 
-## Web
+## Run it
 
 ```bash
-cd web
-cp .env.example .env   # optional XAI_API_KEY
+git clone https://github.com/thepotatoninjahost/Gunther.git
+cd Gunther
+cp .env.example .env
+# put XAI_API_KEY in .env (optional — local lanes work without it)
 npm install
 npm run dev
 ```
 
-See [web/README.md](web/README.md) for architecture and the audit-fix map.
+## Surfaces
+
+| Tab | What it does |
+|---|---|
+| Chat | Talk to the agent. Direct lanes answer inventory, bug hunt, and overdraft patches without a model. |
+| Files | Virtual workspace. Starter project is Pulse Ledger (intentionally buggy). |
+| Review | Dual-approval for proposed writes. Checksums + rollback. |
+| Terminal | `ls`, `cat`, `grep`, `pwd` against the workspace. |
+| Research | Local chunked handbook first. Remote research only if the gateway has credits. |
+
+## Dual approval
+
+1. Agent proposes a change set (preview + checksum).
+2. Owner confirms once.
+3. Owner confirms again.
+4. The write is checksum-verified, then applied — or rolled back.
+
+There is no fabricated approval count. A write that has not been confirmed twice does not land.
+
+## Layout
+
+```
+src/
+  components/workbench/   Chat, files, review, terminal, research
+  lib/agent/              Loop, lanes, tools, constitution
+  lib/workspace/          Single ProjectWorkspace + MutationCoordinator
+  lib/knowledge/          Chunked handbook + stem search
+  lib/store/              Workbench store
+  routes/                 App routes
+```
