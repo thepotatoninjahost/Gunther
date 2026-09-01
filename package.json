@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite dev --host 0.0.0.0 --port 3000",
     "build": "vite build",
-    "build:spa": "vite build --config vite.spa.config.ts",
+    "build:spa": "vite build --config vite.spa.config.ts && node scripts/inline-spa.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."

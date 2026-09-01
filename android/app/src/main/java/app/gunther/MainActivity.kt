@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
 
     private fun serveAsset(path: String): WebResourceResponse {
         return try {
-            val stream = assets.open(path)
+            val bytes = assets.open(path).use { it.readBytes() }
             val mime = mimeType(path)
             WebResourceResponse(
                 mime,
@@ -107,7 +107,7 @@ class MainActivity : ComponentActivity() {
                     "Content-Type" to "$mime; charset=utf-8",
                     "Cache-Control" to "no-store",
                 ),
-                stream,
+                ByteArrayInputStream(bytes),
             )
         } catch (_: Exception) {
             WebResourceResponse(

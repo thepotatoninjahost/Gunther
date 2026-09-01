@@ -152,6 +152,7 @@ export function WorkbenchShell() {
         ref={fileRef}
         type="file"
         className="hidden"
+        style={{ display: "none" }}
         multiple
         onClick={(event) => {
           event.currentTarget.setAttribute("webkitdirectory", "true");
