@@ -23,7 +23,12 @@ class GuntherBridge(
 
     @JavascriptInterface
     fun setApiKey(key: String) {
-        prefs.edit().putString(KEY, key.trim()).apply()
+        val trimmed = key.trim()
+        if (trimmed.isBlank()) return
+        prefs.edit().putString(KEY, trimmed).commit()
+        activity.runOnUiThread {
+            android.widget.Toast.makeText(activity, "API key saved", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 
     @JavascriptInterface

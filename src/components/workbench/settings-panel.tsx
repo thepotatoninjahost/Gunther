@@ -6,7 +6,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_INSTRUCTION_SHEET } from "@/lib/agent/prompt";
 
 function phoneBridge() {
-  return typeof window === "undefined" ? undefined : window.GuntherNative;
+  if (typeof window === "undefined") return undefined;
+  return window.GuntherNative;
+}
+
+function phoneHasKey(): boolean {
+  const bridge = phoneBridge();
+  if (!bridge) return false;
+  try {
+    return Boolean(bridge.hasKey());
+  } catch {
+    return false;
+  }
 }
 
 export function SettingsPanel({
@@ -28,12 +39,12 @@ export function SettingsPanel({
 }) {
   const bridge = phoneBridge();
   const [keyDraft, setKeyDraft] = useState("");
-  const [keySaved, setKeySaved] = useState(() => Boolean(bridge?.hasKey()));
+  const [keySaved, setKeySaved] = useState(() => phoneHasKey());
 
   if (!open) return null;
   return (
     <div className="absolute inset-0 z-20 flex justify-end bg-bg/70">
-      <aside className="flex h-full w-full max-w-md flex-col border-l border-border bg-surface p-4 shadow-xl">
+      <aside className="flex h-full w-full max-w-md flex-col border-l border-border bg-surface p-4 pb-[max(1rem,var(--kb,0px))] shadow-xl">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold text-fg">Model</h2>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close settings">

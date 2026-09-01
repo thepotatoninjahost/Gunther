@@ -41,7 +41,18 @@ declare global {
 }
 
 function native() {
-  return typeof window === "undefined" ? undefined : window.GuntherNative;
+  if (typeof window === "undefined") return undefined;
+  return window.GuntherNative;
+}
+
+function nativeHasKey(): boolean {
+  const bridge = native();
+  if (!bridge) return false;
+  try {
+    return Boolean(bridge.hasKey());
+  } catch {
+    return false;
+  }
 }
 
 function nativeComplete(payload: unknown): Promise<NativeResult> {
@@ -72,7 +83,7 @@ function gatewayError(status: number, fallback?: string): AgentTurnResult {
 }
 
 export async function probeAi(): Promise<{ available: boolean }> {
-  return { available: Boolean(native()?.hasKey()) };
+  return { available: nativeHasKey() };
 }
 
 export async function agentTurn(input: {
@@ -80,7 +91,7 @@ export async function agentTurn(input: {
   messages?: LlmMessage[];
 }): Promise<AgentTurnResult> {
   const messages = input.data?.messages ?? input.messages ?? [];
-  if (!native()?.hasKey()) return { ok: false, error: NEED_KEY };
+  if (!nativeHasKey()) return { ok: false, error: NEED_KEY };
   const result = await nativeComplete({
     model: "grok-4.5",
     temperature: 0.2,
@@ -105,7 +116,7 @@ export async function researchTopic(input: {
   query?: string;
 }): Promise<{ ok: true; hits: ResearchHit[] } | { ok: false; error: string }> {
   const query = input.data?.query ?? input.query ?? "";
-  if (!native()?.hasKey()) return { ok: false, error: NEED_KEY };
+  if (!nativeHasKey()) return { ok: false, error: NEED_KEY };
   const result = await nativeComplete({
     model: "grok-4.5",
     temperature: 0.1,
