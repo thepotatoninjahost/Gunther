@@ -23,7 +23,7 @@ export function TerminalSurface({
       <div className="flex items-center justify-between gap-2">
         <div>
           <h2 className="font-display text-lg font-semibold text-fg">Terminal</h2>
-          <p className="font-mono text-[11px] text-muted">sh · cwd=/ · read-only builtins · type help</p>
+          <p className="font-mono text-[11px] text-muted">try: help · ls · cat README.md</p>
         </div>
         <Button variant="ghost" size="sm" onClick={onClear} disabled={!history.length}>
           Clear

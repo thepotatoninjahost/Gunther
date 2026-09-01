@@ -32,6 +32,7 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    --kb: 0px;
   }
   html,
   body {

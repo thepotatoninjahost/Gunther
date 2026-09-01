@@ -43,6 +43,22 @@ export function WorkbenchShell() {
     })();
   }, []);
 
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const sync = () => {
+      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      document.documentElement.style.setProperty("--kb", `${inset}px`);
+    };
+    viewport.addEventListener("resize", sync);
+    viewport.addEventListener("scroll", sync);
+    sync();
+    return () => {
+      viewport.removeEventListener("resize", sync);
+      viewport.removeEventListener("scroll", sync);
+    };
+  }, []);
+
   const modelStatus =
     aiAvailable == null
       ? "model · checking"
@@ -82,6 +98,9 @@ export function WorkbenchShell() {
             busy={running}
             pending={pending[0] ?? null}
             onApprove={() => void useWorkbench.getState().approve()}
+            onLoadSample={() => useWorkbench.getState().loadSample()}
+            onImport={() => fileRef.current?.click()}
+            fileCount={Object.keys(files).length}
           />
         ) : null}
         {tab === "files" ? (
@@ -100,6 +119,7 @@ export function WorkbenchShell() {
               }
             }}
             onPropose={() => void useWorkbench.getState().proposeEditorSave()}
+            onCreate={(path) => useWorkbench.getState().createFile(path)}
             onClose={() => useWorkbench.setState({ editorPath: "", editorDraft: "" })}
           />
         ) : null}
@@ -155,27 +175,27 @@ export function WorkbenchShell() {
         className="hidden"
         style={{ display: "none" }}
         multiple
-        onClick={(event) => {
-          event.currentTarget.setAttribute("webkitdirectory", "true");
-        }}
         onChange={async (event) => {
           const list = event.target.files;
           if (!list?.length) return;
           const incoming: Record<string, string> = {};
           await Promise.all(
             [...list].map(async (file) => {
-              if (file.size > 200_000) return;
+              if (file.size > 1_000_000) return;
               const relative = file.webkitRelativePath || file.name;
-              const path = relative.replace(/^[^/]+\//, "");
-              if (!path || path.includes("node_modules") || path.startsWith(".")) return;
+              const path = relative.replace(/^[^/]+\//, "") || file.name;
+              if (!path || path.includes("node_modules")) return;
               const text = await file.text();
               if (text.includes("\u0000")) return;
               incoming[path] = text;
             }),
           );
           if (Object.keys(incoming).length) {
-            const folder = list[0]?.webkitRelativePath.split("/")[0];
-            useWorkbench.getState().importFiles(incoming, folder);
+            useWorkbench.getState().importFiles(incoming);
+          } else {
+            useWorkbench.setState({
+              detail: "No text files in that pick. Choose .py / .ts / .md / similar.",
+            });
           }
           event.target.value = "";
         }}

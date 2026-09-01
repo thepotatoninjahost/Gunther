@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FileCode2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ export function FilesSurface({
   onDraft,
   onRevert,
   onPropose,
+  onCreate,
   onClose,
 }: {
   files: FileMap;
@@ -25,8 +27,10 @@ export function FilesSurface({
   onDraft: (value: string) => void;
   onRevert: () => void;
   onPropose: () => void;
+  onCreate: (path: string) => void;
   onClose: () => void;
 }) {
+  const [newPath, setNewPath] = useState("");
   const names = Object.keys(files)
     .sort()
     .filter((name) => name.toLowerCase().includes(filter.trim().toLowerCase()));
@@ -53,7 +57,7 @@ export function FilesSurface({
             Revert
           </Button>
           <Button onClick={onPropose} disabled={!dirty} className="flex-1">
-            Propose save
+            Save
           </Button>
         </div>
       </div>
@@ -64,16 +68,38 @@ export function FilesSurface({
     <div className="flex h-full min-h-0 flex-col overflow-hidden gap-3 p-4">
       <div>
         <h2 className="font-display text-lg font-semibold text-fg">Project files</h2>
-        <p className="mt-1 text-xs text-muted">Open a file to edit. Saves stage a dual-approval proposal.</p>
+        <p className="mt-1 text-xs text-muted">
+          Your files. Create one here, import from the folder button, or ask Grok to write it.
+        </p>
       </div>
-      <Input
-        value={filter}
-        onChange={(e) => onFilter(e.target.value)}
-        placeholder="Filter files"
-      />
+      <form
+        className="flex gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!newPath.trim()) return;
+          onCreate(newPath.trim());
+          setNewPath("");
+        }}
+      >
+        <Input
+          value={newPath}
+          onChange={(e) => setNewPath(e.target.value)}
+          placeholder="src/app.py"
+          className="font-mono"
+          autoCapitalize="off"
+          autoCorrect="off"
+        />
+        <Button type="submit" disabled={!newPath.trim()}>
+          New
+        </Button>
+      </form>
+      <Input value={filter} onChange={(e) => onFilter(e.target.value)} placeholder="Filter files" />
       <div className="min-h-0 flex-1 overflow-y-auto">
         {names.length === 0 ? (
-          <Empty title="No files" body="Tap New for the starter project, Import a folder, or change the filter." />
+          <Empty
+            title="No files yet"
+            body="Type a name above and tap New, or import files from this phone."
+          />
         ) : (
           <ul className="flex flex-col gap-1.5">
             {names.map((name) => (

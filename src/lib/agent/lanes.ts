@@ -73,15 +73,15 @@ export async function tryDirectLane(
     return { handled: true, reply: `passed=${report.passed}\n${issues}` };
   }
 
-  if (isBugHunt(text)) {
+  if (isBugHunt(text) && files["src/ledger.ts"]) {
     return { handled: true, reply: reviewLedger(workspace) };
   }
 
-  if (isOverdraftAsk(text)) {
+  if (isOverdraftAsk(text) && files["src/ledger.ts"]) {
     return stageOverdraft(workspace, mutations, text);
   }
 
-  if (isFiniteGuardAsk(text)) {
+  if (isFiniteGuardAsk(text) && files["src/ledger.ts"]) {
     return stageFiniteGuard(workspace, mutations, text);
   }
 
@@ -99,7 +99,7 @@ function isListing(text: string): boolean {
 }
 
 function isBugHunt(text: string): boolean {
-  return /(find bugs?|what'?s wrong|review|issues?|defects?|todo|fixme)/i.test(text);
+  return /find bugs in the ledger/i.test(text);
 }
 
 function isOverdraftAsk(text: string): boolean {

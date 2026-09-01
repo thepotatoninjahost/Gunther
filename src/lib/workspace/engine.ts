@@ -1,6 +1,5 @@
 import type { FileMap, PendingChangeProposal } from "@/lib/agent/types";
 import { MutationCoordinator } from "./mutations";
-import { cloneStarter } from "./starter";
 import { ProjectWorkspace } from "./workspace";
 
 /**
@@ -18,7 +17,7 @@ export class WorkbenchEngine {
   }
 }
 
-let engine = new WorkbenchEngine(cloneStarter());
+let engine = new WorkbenchEngine({});
 
 export function getEngine(): WorkbenchEngine {
   return engine;

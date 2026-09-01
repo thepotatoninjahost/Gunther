@@ -26,7 +26,9 @@ export function ReviewSurface({
       {!pending ? (
         <div className="mt-10 text-center">
           <p className="font-medium text-fg">No pending changes</p>
-          <p className="mt-1 text-sm text-muted">Agent and editor proposals appear here before any write.</p>
+          <p className="mt-1 text-sm text-muted">
+            When Grok wants to write a file, the patch shows up here. Tap Confirm twice to apply it.
+          </p>
         </div>
       ) : (
         <div className="mt-4 rounded-xl border border-warn/50 bg-raised p-4">

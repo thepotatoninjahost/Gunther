@@ -46,6 +46,10 @@ export class ProjectWorkspace {
       .sort();
   }
 
+  writeOwner(path: string, text: string) {
+    this.files[safePath(path)] = text;
+  }
+
   exists(path: string): boolean {
     return safePath(path) in this.files;
   }

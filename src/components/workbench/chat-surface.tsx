@@ -5,12 +5,6 @@ import type { ChatMessage, PendingChangeProposal } from "@/lib/agent/types";
 import { cn } from "@/lib/utils";
 import { ApprovalCard } from "./approval-card";
 
-const STARTERS = [
-  "What's in this project?",
-  "Find bugs in the ledger",
-  "Add overdraft protection to withdraw",
-];
-
 export function ChatSurface({
   messages,
   input,
@@ -19,6 +13,9 @@ export function ChatSurface({
   busy,
   pending,
   onApprove,
+  onLoadSample,
+  onImport,
+  fileCount,
 }: {
   messages: ChatMessage[];
   input: string;
@@ -27,10 +24,12 @@ export function ChatSurface({
   busy: boolean;
   pending: PendingChangeProposal | null;
   onApprove: () => void;
+  onLoadSample: () => void;
+  onImport: () => void;
+  fileCount: number;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
-  const fieldRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -51,23 +50,48 @@ export function ChatSurface({
         {messages.length === 0 ? (
           <div className="mx-auto max-w-lg py-6">
             <h2 className="font-display text-xl font-semibold text-fg text-balance">
-              Evidence first. Then a patch.
+              Tell it what to build.
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted text-pretty">
-              Tap a starter or type below. You can keep going — there is no try limit.
+              This is a coding agent, not a piggy-bank toy. Import your files, create new ones, or
+              just type. Grok writes the patch. You confirm it in Review.
+            </p>
+            <p className="mt-2 font-mono text-xs text-muted">
+              {fileCount ? `${fileCount} file(s) mounted` : "Empty workspace"}
             </p>
             <div className="mt-6 flex flex-col gap-2">
-              {STARTERS.map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => onSend(prompt)}
-                  className="min-h-11 rounded-lg border border-border bg-raised px-4 py-3 text-left text-sm text-fg hover:border-accent/40 disabled:opacity-40"
-                >
-                  {prompt}
-                </button>
-              ))}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onSend("What's in this project?")}
+                className="min-h-11 rounded-lg border border-border bg-raised px-4 py-3 text-left text-sm text-fg hover:border-accent/40 disabled:opacity-40"
+              >
+                What's in this project?
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onSend("Create a file hello.py that prints hello")}
+                className="min-h-11 rounded-lg border border-border bg-raised px-4 py-3 text-left text-sm text-fg hover:border-accent/40 disabled:opacity-40"
+              >
+                Create hello.py
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onImport}
+                className="min-h-11 rounded-lg border border-border bg-raised px-4 py-3 text-left text-sm text-fg hover:border-accent/40 disabled:opacity-40"
+              >
+                Import files from this phone
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onLoadSample}
+                className="min-h-11 rounded-lg border border-dashed border-border bg-bg px-4 py-3 text-left text-sm text-muted hover:border-accent/40 disabled:opacity-40"
+              >
+                Optional: load the sample ledger
+              </button>
             </div>
           </div>
         ) : (
@@ -75,9 +99,7 @@ export function ChatSurface({
             {messages.map((message) => (
               <ChatBubble key={message.id} message={message} />
             ))}
-            {busy ? (
-              <p className="font-mono text-xs text-warn">Agent is working…</p>
-            ) : null}
+            {busy ? <p className="font-mono text-xs text-warn">Agent is working…</p> : null}
           </div>
         )}
       </div>
@@ -91,7 +113,7 @@ export function ChatSurface({
         </div>
       ) : null}
       <form
-        className="shrink-0 border-t border-border bg-surface px-4 py-3"
+        className="shrink-0 border-t border-border bg-surface px-4 py-3 pb-[max(0.75rem,var(--kb,0px))]"
         onSubmit={(event) => {
           event.preventDefault();
           onSend();
@@ -99,10 +121,9 @@ export function ChatSurface({
       >
         <div className="mx-auto max-w-2xl">
           <Textarea
-            ref={fieldRef}
             value={input}
             onChange={(e) => onInput(e.target.value)}
-            placeholder="Ask anything about this project…"
+            placeholder="Ask Grok to build, fix, or explain…"
             rows={2}
             enterKeyHint="send"
             autoComplete="off"
@@ -115,7 +136,7 @@ export function ChatSurface({
             }}
           />
           <div className="mt-2 flex items-center justify-between gap-3">
-            <p className="text-xs text-muted">Tap Send · there is no try limit</p>
+            <p className="text-xs text-muted">Type anything. Tap Send.</p>
             <Button type="submit" disabled={!input.trim() || busy} className="min-h-11 min-w-28">
               {busy ? "Working" : "Send"}
             </Button>

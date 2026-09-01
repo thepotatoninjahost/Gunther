@@ -57,7 +57,9 @@ type WorkbenchState = {
   setInstructionSheet: (value: string) => void;
   setSettingsOpen: (open: boolean) => void;
   newProject: () => void;
+  loadSample: () => void;
   importFiles: (incoming: FileMap, name?: string) => void;
+  createFile: (path: string) => void;
   probe: () => Promise<void>;
   send: (preset?: string) => Promise<void>;
   stop: () => void;
@@ -82,8 +84,8 @@ function snapshotPending(): PendingChangeProposal[] {
 export const useWorkbench = create<WorkbenchState>()(
   persist(
     (set, get) => ({
-      projectName: STARTER_NAME,
-      files: cloneStarter(),
+      projectName: "workspace",
+      files: {},
       chat: [],
       events: [],
       terminalHistory: [],
@@ -92,7 +94,7 @@ export const useWorkbench = create<WorkbenchState>()(
       instructionSheet: DEFAULT_INSTRUCTION_SHEET,
       tab: "chat",
       status: "ready",
-      detail: "Talk freely — or New / Import a project",
+      detail: "Talk freely — import files or ask Grok to build something",
       running: false,
       cancelled: false,
       runToken: "",
@@ -137,6 +139,22 @@ export const useWorkbench = create<WorkbenchState>()(
       setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
 
       newProject: () => {
+        resetEngine({});
+        set({
+          projectName: "workspace",
+          files: {},
+          pending: [],
+          transactions: [],
+          editorPath: "",
+          editorDraft: "",
+          chat: [],
+          events: [],
+          status: "ready",
+          detail: "Blank project — type what you want built",
+        });
+      },
+
+      loadSample: () => {
         resetEngine(cloneStarter());
         set({
           projectName: STARTER_NAME,
@@ -148,21 +166,41 @@ export const useWorkbench = create<WorkbenchState>()(
           chat: [],
           events: [],
           status: "ready",
-          detail: "New project mounted — Pulse Ledger starter",
+          detail: "Sample mounted — Pulse Ledger. Optional demo only.",
         });
       },
 
       importFiles: (incoming, name) => {
-        resetEngine(incoming);
+        const merged = { ...getEngine().workspace.snapshot(), ...incoming };
+        resetEngine(merged);
         set({
-          projectName: name?.trim() || "imported",
+          projectName: name?.trim() || get().projectName || "workspace",
           files: snapshotFiles(),
           pending: [],
           transactions: [],
           editorPath: "",
           editorDraft: "",
           status: "ready",
-          detail: `Imported ${Object.keys(incoming).length} files`,
+          detail: `Added ${Object.keys(incoming).length} file(s)`,
+        });
+      },
+
+      createFile: (path) => {
+        const key = path.trim().replace(/^\/+/, "");
+        if (!key) return;
+        if (getEngine().workspace.exists(key)) {
+          set({ detail: `${key} already exists`, tab: "files" });
+          get().setEditorPath(key);
+          return;
+        }
+        getEngine().workspace.writeOwner(key, "");
+        set({
+          files: snapshotFiles(),
+          editorPath: key,
+          editorDraft: "",
+          tab: "files",
+          status: "ready",
+          detail: `Created ${key}`,
         });
       },
 
@@ -339,31 +377,11 @@ export const useWorkbench = create<WorkbenchState>()(
         const path = get().editorPath;
         const draft = get().editorDraft;
         if (!path) return;
-        let current: string;
-        try {
-          current = getEngine().workspace.read(path);
-        } catch {
-          set({ status: "failed", detail: "File no longer exists" });
-          return;
-        }
-        if (current === draft) {
-          set({ detail: "No changes to save" });
-          return;
-        }
-        const proposed = await getEngine().mutations.propose(
-          `Editor save: ${path}`,
-          [{ kind: "REPLACE", path, oldText: current, newText: draft }],
-          "Editor save",
-        );
-        if (proposed.kind === "rejected") {
-          set({ status: "failed", detail: proposed.reason });
-          return;
-        }
+        getEngine().workspace.writeOwner(path, draft);
         set({
-          pending: snapshotPending(),
-          tab: "review",
-          status: "approval",
-          detail: `Save proposed; confirm twice in Review`,
+          files: snapshotFiles(),
+          status: "ready",
+          detail: `Saved ${path}`,
         });
       },
 
@@ -414,7 +432,7 @@ export const useWorkbench = create<WorkbenchState>()(
       clearChat: () => set({ chat: [], events: [] }),
     }),
     {
-      name: "coding-agent-workbench",
+      name: "coding-agent-workbench-v2",
       skipHydration: true,
       partialize: (state) => ({
         projectName: state.projectName,
