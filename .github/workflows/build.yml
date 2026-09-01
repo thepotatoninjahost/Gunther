@@ -28,10 +28,18 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Stage artifact
+        run: |
+          mkdir -p gunther-web
+          cp -a .output/. gunther-web/
+          ls -la gunther-web
+          test -f gunther-web/server/index.mjs
+          test -d gunther-web/public
+
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
           name: gunther-web
-          path: .output
+          path: gunther-web
           if-no-files-found: error
           retention-days: 14
