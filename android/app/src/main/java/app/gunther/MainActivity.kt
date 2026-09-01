@@ -145,6 +145,7 @@ class MainActivity : ComponentActivity() {
     }
 
     fun openFolderPicker() {
+        toast("Select a folder")
         folderPicker.launch(null)
     }
 
