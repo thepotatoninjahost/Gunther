@@ -1,49 +1,34 @@
 # Gunther
 
-Evidence-first coding agent. Chat, files, dual-approval review, terminal, and local research — in the browser.
+Evidence-first coding agent. Chat, files, dual-approval review, terminal, and local research.
 
-## What this is
+## Install on your phone (Galaxy / Android)
 
-A single shared workspace drives every mutation. Proposed writes come back as **accepted** or **rejected** (never a crash). Writes need **two owner confirmations**. The xAI key lives only on the server — never in the browser.
+You do **not** need a computer.
 
-Offline-first: list, read, verify, terminal, local handbook search, and starter patches work without a model. When the gateway has credits, the agent loop uses typed tool calls.
+1. On your phone, open **[this download page](https://github.com/thepotatoninjahost/Gunther/releases/latest)**.
+2. Tap **Gunther.apk**.
+3. Open the file and tap **Install**.
+4. If the phone says it is blocked: **Settings → Apps →** (Chrome or Samsung Internet) **→ Install unknown apps → Allow**. Then tap the APK again.
+5. Open **Gunther** from your app list.
 
-## Run it
+That is the app.
 
-```bash
-git clone https://github.com/thepotatoninjahost/Gunther.git
-cd Gunther
-cp .env.example .env
-# put XAI_API_KEY in .env (optional — local lanes work without it)
-npm install
-npm run dev
-```
+## What it does
 
-## Download the build
+A single shared workspace drives every mutation. Proposed writes come back as **accepted** or **rejected**. Writes need **two owner confirmations**.
 
-Every green run on [Actions](https://github.com/thepotatoninjahost/Gunther/actions) uploads a **gunther-web** artifact (the production `.output` folder).
-
-1. Open the latest **Build** run.
-2. Scroll to **Artifacts**.
-3. Download **gunther-web**.
-
-Run it with Node:
-
-```bash
-unzip gunther-web.zip
-cd gunther-web          # or whatever folder the zip unpacked
-XAI_API_KEY=… node server/index.mjs
-```
+On the phone build, the agent runs locally: list, read, verify, terminal, handbook search, and starter patches (bugs in the ledger, overdraft protection) work without a server.
 
 ## Surfaces
 
 | Tab | What it does |
 |---|---|
-| Chat | Talk to the agent. Direct lanes answer inventory, bug hunt, and overdraft patches without a model. |
+| Chat | Talk to the agent. Tap a starter to send. |
 | Files | Virtual workspace. Starter project is Pulse Ledger (intentionally buggy). |
 | Review | Dual-approval for proposed writes. Checksums + rollback. |
 | Terminal | `ls`, `cat`, `grep`, `pwd` against the workspace. |
-| Research | Local chunked handbook first. Remote research only if the gateway has credits. |
+| Research | Local chunked handbook. |
 
 ## Dual approval
 
@@ -51,17 +36,3 @@ XAI_API_KEY=… node server/index.mjs
 2. Owner confirms once.
 3. Owner confirms again.
 4. The write is checksum-verified, then applied — or rolled back.
-
-There is no fabricated approval count. A write that has not been confirmed twice does not land.
-
-## Layout
-
-```
-src/
-  components/workbench/   Chat, files, review, terminal, research
-  lib/agent/              Loop, lanes, tools, constitution
-  lib/workspace/          Single ProjectWorkspace + MutationCoordinator
-  lib/knowledge/          Chunked handbook + stem search
-  lib/store/              Workbench store
-  routes/                 App routes
-```

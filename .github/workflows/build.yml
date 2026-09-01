@@ -6,40 +6,88 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  web:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
-
-      - name: Install
-        run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Build
-        run: npm run build
-
-      - name: Stage artifact
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Stage web artifact
         run: |
           mkdir -p gunther-web
           cp -a .output/. gunther-web/
-          ls -la gunther-web
-          test -f gunther-web/server/index.mjs
-          test -d gunther-web/public
-
-      - name: Upload web artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: gunther-web
           path: gunther-web
           if-no-files-found: error
           retention-days: 14
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build:spa
+      - name: Confirm bundled UI
+        run: test -f android/app/src/main/assets/www/index.html
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Assemble APK
+        working-directory: android
+        run: gradle assembleDebug --stacktrace
+
+      - name: Name the installer
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk Gunther.apk
+          ls -lh Gunther.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Gunther.apk
+          path: Gunther.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish phone download
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android
+          name: Gunther for Android
+          files: Gunther.apk
+          fail_on_unmatched_files: true
+          make_latest: true
+          body: |
+            Tap **Gunther.apk** on your Galaxy to install.
+
+            1. Open this page on your phone.
+            2. Tap Gunther.apk — download it.
+            3. Open the download and tap Install.
+            4. If Samsung blocks it: Settings → Apps → the browser you used → Install unknown apps → Allow.
+            5. Open **Gunther** from your app list.
