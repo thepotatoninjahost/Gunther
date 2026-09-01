@@ -4,7 +4,7 @@ import type { ProjectWorkspace } from "@/lib/workspace/workspace";
 import { runCommand } from "@/lib/workspace/terminal";
 import { searchKnowledge } from "@/lib/knowledge/search";
 import { clampText } from "@/lib/utils";
-import { researchTopic } from "./llm";
+import { researchTopic } from "@/lib/agent/llm";
 
 const MAX = 6_000;
 

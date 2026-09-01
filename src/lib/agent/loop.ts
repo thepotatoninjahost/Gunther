@@ -2,7 +2,7 @@ import type { ChatMessage, FileMap, LlmMessage } from "./types";
 import type { MutationCoordinator } from "@/lib/workspace/mutations";
 import type { ProjectWorkspace } from "@/lib/workspace/workspace";
 import { tryDirectLane } from "./lanes";
-import { agentTurn } from "./llm";
+import { agentTurn } from "@/lib/agent/llm";
 import { DEFAULT_INSTRUCTION_SHEET, repoMap } from "./prompt";
 import { dispatchTool } from "./tools";
 
