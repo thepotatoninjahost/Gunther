@@ -19,6 +19,22 @@ npm install
 npm run dev
 ```
 
+## Download the build
+
+Every green run on [Actions](https://github.com/thepotatoninjahost/Gunther/actions) uploads a **gunther-web** artifact (the production `.output` folder).
+
+1. Open the latest **Build** run.
+2. Scroll to **Artifacts**.
+3. Download **gunther-web**.
+
+Run it with Node:
+
+```bash
+unzip gunther-web.zip
+cd gunther-web          # or whatever folder the zip unpacked
+XAI_API_KEY=… node server/index.mjs
+```
+
 ## Surfaces
 
 | Tab | What it does |
