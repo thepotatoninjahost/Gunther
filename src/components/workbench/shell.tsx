@@ -51,32 +51,34 @@ export function WorkbenchShell() {
         : "grok-4.5 · unavailable";
 
   return (
-    <div className="relative flex h-dvh min-h-0 flex-col bg-bg text-fg">
-      <StatusBar
-        status={status}
-        detail={detail}
-        projectName={projectName}
-        modelStatus={modelStatus}
-        running={running}
-        onNew={() => useWorkbench.getState().newProject()}
-        onImport={() => fileRef.current?.click()}
-        onSettings={() => useWorkbench.getState().setSettingsOpen(true)}
-        onStop={() => useWorkbench.getState().stop()}
-      />
-      <div className="hidden md:block">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-bg text-fg">
+      <div className="shrink-0">
+        <StatusBar
+          status={status}
+          detail={detail}
+          projectName={projectName}
+          modelStatus={modelStatus}
+          running={running}
+          onNew={() => useWorkbench.getState().newProject()}
+          onImport={() => fileRef.current?.click()}
+          onSettings={() => useWorkbench.getState().setSettingsOpen(true)}
+          onStop={() => useWorkbench.getState().stop()}
+        />
+      </div>
+      <div className="hidden shrink-0 md:block">
         <TabBar
           tab={tab}
           onTab={(next) => useWorkbench.getState().setTab(next)}
           pendingCount={pending.length}
         />
       </div>
-      <main className="min-h-0 flex-1">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {tab === "chat" ? (
           <ChatSurface
             messages={chat}
             input={chatInput}
             onInput={(v) => useWorkbench.getState().setChatInput(v)}
-            onSend={() => void useWorkbench.getState().send()}
+            onSend={(preset) => void useWorkbench.getState().send(preset)}
             busy={running}
             pending={pending[0] ?? null}
             onApprove={() => void useWorkbench.getState().approve()}
@@ -131,7 +133,7 @@ export function WorkbenchShell() {
           />
         ) : null}
       </main>
-      <div className="md:hidden">
+      <div className="shrink-0 md:hidden">
         <TabBar
           tab={tab}
           onTab={(next) => useWorkbench.getState().setTab(next)}
@@ -176,7 +178,7 @@ export function WorkbenchShell() {
           event.target.value = "";
         }}
       />
-      <Toaster theme="dark" position="bottom-center" />
+      <Toaster theme="dark" position="top-center" />
     </div>
   );
 }

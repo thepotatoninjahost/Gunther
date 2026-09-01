@@ -32,9 +32,19 @@
     -moz-osx-font-smoothing: grayscale;
   }
   html,
-  body,
+  body {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
   #root {
-    min-height: 100%;
+    height: 100%;
+    overflow: hidden;
     background: var(--color-bg);
     color: var(--color-fg);
   }
@@ -49,6 +59,10 @@
   }
   p {
     text-wrap: pretty;
+  }
+  textarea,
+  input {
+    font-size: 16px;
   }
 }
 

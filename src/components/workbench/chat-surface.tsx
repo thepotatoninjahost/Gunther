@@ -23,35 +23,47 @@ export function ChatSurface({
   messages: ChatMessage[];
   input: string;
   onInput: (value: string) => void;
-  onSend: () => void;
+  onSend: (preset?: string) => void;
   busy: boolean;
   pending: PendingChangeProposal | null;
   onApprove: () => void;
 }) {
-  const endRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const stickToBottom = useRef(true);
+  const fieldRef = useRef<HTMLTextAreaElement>(null);
+
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length, busy]);
+    const el = scrollerRef.current;
+    if (!el || !stickToBottom.current) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages.length, busy, pending]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div
+        ref={scrollerRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4"
+        onScroll={(event) => {
+          const el = event.currentTarget;
+          stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
+        }}
+      >
         {messages.length === 0 ? (
-          <div className="mx-auto max-w-lg py-10">
+          <div className="mx-auto max-w-lg py-6">
             <h2 className="font-display text-xl font-semibold text-fg text-balance">
               Evidence first. Then a patch.
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted text-pretty">
-              Ask in plain English. The agent reads this project, stages a transactional
-              change, and waits for two owner confirmations before writing.
+              Tap a starter or type below. You can keep going — there is no try limit.
             </p>
             <div className="mt-6 flex flex-col gap-2">
               {STARTERS.map((prompt) => (
                 <button
                   key={prompt}
                   type="button"
-                  onClick={() => onInput(prompt)}
-                  className="rounded-lg border border-border bg-raised px-4 py-3 text-left text-sm text-fg hover:border-accent/40"
+                  disabled={busy}
+                  onClick={() => onSend(prompt)}
+                  className="min-h-11 rounded-lg border border-border bg-raised px-4 py-3 text-left text-sm text-fg hover:border-accent/40 disabled:opacity-40"
                 >
                   {prompt}
                 </button>
@@ -66,12 +78,11 @@ export function ChatSurface({
             {busy ? (
               <p className="font-mono text-xs text-warn">Agent is working…</p>
             ) : null}
-            <div ref={endRef} />
           </div>
         )}
       </div>
       {pending ? (
-        <div className="px-4 pb-2">
+        <div className="shrink-0 px-4 pb-2">
           <ApprovalCard
             approvalCount={pending.approvals.length}
             reason={pending.changeSet.reason}
@@ -79,28 +90,38 @@ export function ChatSurface({
           />
         </div>
       ) : null}
-      <div className="border-t border-border bg-surface px-4 py-3">
+      <form
+        className="shrink-0 border-t border-border bg-surface px-4 py-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSend();
+        }}
+      >
         <div className="mx-auto max-w-2xl">
           <Textarea
+            ref={fieldRef}
             value={input}
             onChange={(e) => onInput(e.target.value)}
-            placeholder="Describe what you want fixed or added…"
-            rows={4}
+            placeholder="Ask anything about this project…"
+            rows={2}
+            enterKeyHint="send"
+            autoComplete="off"
+            className="min-h-16 resize-none text-base md:min-h-20"
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 onSend();
               }
             }}
           />
           <div className="mt-2 flex items-center justify-between gap-3">
-            <p className="text-xs text-muted">⌘ / Ctrl + Enter</p>
-            <Button onClick={onSend} disabled={!input.trim() || busy} className="min-w-28">
+            <p className="text-xs text-muted">Enter to send · Shift+Enter for a new line</p>
+            <Button type="submit" disabled={!input.trim() || busy} className="min-h-11 min-w-28">
               {busy ? "Working" : "Send"}
             </Button>
           </div>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

@@ -34,6 +34,7 @@ type WorkbenchState = {
   detail: string;
   running: boolean;
   cancelled: boolean;
+  runToken: string;
   aiAvailable: boolean | null;
   chatInput: string;
   editorPath: string;
@@ -58,7 +59,7 @@ type WorkbenchState = {
   newProject: () => void;
   importFiles: (incoming: FileMap, name?: string) => void;
   probe: () => Promise<void>;
-  send: () => Promise<void>;
+  send: (preset?: string) => Promise<void>;
   stop: () => void;
   approve: () => Promise<void>;
   reject: () => void;
@@ -94,6 +95,7 @@ export const useWorkbench = create<WorkbenchState>()(
       detail: "Talk freely — or New / Import a project",
       running: false,
       cancelled: false,
+      runToken: "",
       aiAvailable: null,
       chatInput: "",
       editorPath: "",
@@ -108,7 +110,13 @@ export const useWorkbench = create<WorkbenchState>()(
 
       hydrateEngine: () => {
         resetEngine(get().files, get().pending);
-        set({ files: snapshotFiles(), pending: snapshotPending() });
+        set({
+          files: snapshotFiles(),
+          pending: snapshotPending(),
+          running: false,
+          cancelled: false,
+          settingsOpen: false,
+        });
       },
 
       setTab: (tab) => set({ tab }),
@@ -167,8 +175,8 @@ export const useWorkbench = create<WorkbenchState>()(
         }
       },
 
-      send: async () => {
-        const request = get().chatInput.trim();
+      send: async (preset) => {
+        const request = (preset ?? get().chatInput).trim();
         if (!request || get().running) return;
         const userMsg: ChatMessage = {
           id: uid("msg"),
@@ -176,14 +184,27 @@ export const useWorkbench = create<WorkbenchState>()(
           content: request,
           createdAt: Date.now(),
         };
+        const runToken = uid("run");
         set({
           chatInput: "",
           running: true,
           cancelled: false,
+          runToken,
           status: "planning",
           detail: "Inspecting the request",
           chat: [...get().chat, userMsg],
         });
+        const watchdog =
+          typeof window === "undefined"
+            ? null
+            : window.setTimeout(() => {
+                if (get().runToken !== runToken || !get().running) return;
+                set({
+                  running: false,
+                  status: "failed",
+                  detail: "That took too long. Try again — there is no try limit.",
+                });
+              }, 45000);
         const engine = getEngine();
         try {
           const result = await runAgentLoop(request, {
@@ -194,6 +215,7 @@ export const useWorkbench = create<WorkbenchState>()(
             instructionSheet: get().instructionSheet,
             handlers: {
               onEvent: (phase, detail) => {
+                if (get().runToken !== runToken) return;
                 const event: AgentEvent = { id: uid("ev"), phase, detail, at: Date.now() };
                 const status = mapPhase(phase);
                 set({
@@ -203,11 +225,13 @@ export const useWorkbench = create<WorkbenchState>()(
                 });
               },
               onProposal: () => {
+                if (get().runToken !== runToken) return;
                 set({ pending: snapshotPending(), tab: "review", status: "approval" });
               },
-              isCancelled: () => get().cancelled,
+              isCancelled: () => get().cancelled || get().runToken !== runToken,
             },
           });
+          if (get().runToken !== runToken) return;
           const agentMsg: ChatMessage = {
             id: uid("msg"),
             role: "agent",
@@ -230,11 +254,15 @@ export const useWorkbench = create<WorkbenchState>()(
             tab: result.proposalId ? "review" : get().tab,
           });
         } catch (error) {
+          if (get().runToken !== runToken) return;
           set({
             running: false,
             status: "failed",
             detail: error instanceof Error ? error.message : "Run failed",
           });
+        } finally {
+          if (watchdog != null) window.clearTimeout(watchdog);
+          if (get().runToken === runToken) set({ running: false });
         }
       },
 

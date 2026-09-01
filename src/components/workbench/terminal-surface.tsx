@@ -19,7 +19,7 @@ export function TerminalSurface({
   onClear: () => void;
 }) {
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden gap-3 p-4">
       <div className="flex items-center justify-between gap-2">
         <div>
           <h2 className="font-display text-lg font-semibold text-fg">Terminal</h2>

@@ -20,7 +20,7 @@ export function ResearchSurface({
 }) {
   const stats = knowledgeStats();
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden gap-3 p-4">
       <div>
         <h2 className="font-display text-lg font-semibold text-fg">Research</h2>
         <p className="mt-1 text-sm text-muted">

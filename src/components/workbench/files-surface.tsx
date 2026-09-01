@@ -35,7 +35,7 @@ export function FilesSurface({
 
   if (path) {
     return (
-      <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden gap-3 p-4">
         <div className="flex items-center gap-2">
           <p className="min-w-0 flex-1 truncate font-mono text-xs text-warn">{path}</p>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -61,7 +61,7 @@ export function FilesSurface({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden gap-3 p-4">
       <div>
         <h2 className="font-display text-lg font-semibold text-fg">Project files</h2>
         <p className="mt-1 text-xs text-muted">Open a file to edit. Saves stage a dual-approval proposal.</p>

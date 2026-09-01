@@ -17,7 +17,7 @@ export function ReviewSurface({
   onRollback: () => void;
 }) {
   return (
-    <div className="h-full min-h-0 overflow-y-auto p-4">
+    <div className="h-full min-h-0 overflow-y-auto overscroll-contain p-4">
       <h2 className="font-display text-lg font-semibold text-fg">Change review</h2>
       <p className="mt-1 text-sm text-muted">
         Transactional writes stay checksum-guarded. Two owner confirmations apply the patch.
