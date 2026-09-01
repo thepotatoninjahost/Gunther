@@ -11,16 +11,27 @@ android {
         applicationId = "app.gunther"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "1.2.1"
+    }
+
+    signingConfigs {
+        create("shared") {
+            storeFile = file("gunther.keystore")
+            storePassword = "gunther-sideload"
+            keyAlias = "gunther"
+            keyPassword = "gunther-sideload"
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("shared")
         }
         debug {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("shared")
         }
     }
 
