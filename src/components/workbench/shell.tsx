@@ -44,7 +44,6 @@ export function WorkbenchShell() {
     fileRef.current?.click();
   };
 
-
   useEffect(() => {
     void (async () => {
       await useWorkbench.persist.rehydrate();
@@ -79,12 +78,7 @@ export function WorkbenchShell() {
     };
   }, []);
 
-  const modelStatus =
-    aiAvailable == null
-      ? "model · checking"
-      : aiAvailable
-        ? "qwen3-coder · ready"
-        : "qwen3-coder · unavailable";
+  const modelStatus = modelLabel(aiAvailable);
 
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-bg text-fg">
@@ -222,4 +216,22 @@ export function WorkbenchShell() {
       <Toaster theme="dark" position="top-center" />
     </div>
   );
+}
+
+function modelLabel(aiAvailable: boolean | null): string {
+  let model = "openrouter";
+  if (typeof window !== "undefined") {
+    const bridge = window.GuntherNative;
+    if (bridge) {
+      try {
+        const live = bridge.getModel();
+        if (live) model = live;
+      } catch {
+        /* bridge missing on web */
+      }
+    }
+  }
+  const short = model.split("/").pop() || model;
+  if (aiAvailable == null) return `${short} · checking`;
+  return aiAvailable ? `${short} · ready` : `${short} · unavailable`;
 }
