@@ -54,7 +54,7 @@ export function SettingsPanel({
         <div className="mt-4 space-y-4 overflow-y-auto">
           <section className="rounded-lg border border-border bg-raised p-3">
             <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">Gateway</p>
-            <p className="mt-1 text-sm text-fg">grok-4.5 · on this phone</p>
+            <p className="mt-1 text-sm text-fg">grok-4.6 · on this phone</p>
             <p className="mt-1 text-xs leading-relaxed text-muted">
               Paste an xAI API key. It is stored in this phone’s private storage, not in the
               installer, and it is never shown back to the screen.

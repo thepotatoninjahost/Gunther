@@ -2,13 +2,12 @@ import { z } from "zod";
 import type { AgentTurnResult, LlmMessage, ResearchHit } from "./types";
 import { TOOL_DEFINITIONS } from "./prompt";
 
-const CREDITS_ERROR =
-  "The model gateway rejected the key. Check it in Settings. List, read, verify, terminal, and starter patches still work.";
-const NEED_KEY = "Add your xAI API key in Settings (the gear). The key stays on this phone.";
+const NEED_KEY = "Add your xAI API key in Settings (the gear).";
 
 type NativeResult = {
   status: number;
   json?: {
+    error?: { message?: string; type?: string; code?: string } | string;
     choices?: {
       message?: {
         content?: string | null;
@@ -79,9 +78,17 @@ function nativeComplete(payload: unknown): Promise<NativeResult> {
   });
 }
 
-function gatewayError(status: number, fallback?: string): AgentTurnResult {
-  if (status === 401 || status === 403) return { ok: false, error: CREDITS_ERROR };
-  return { ok: false, error: fallback || `xAI API error ${status}` };
+function describeError(result: NativeResult): string {
+  const nested = result.json?.error;
+  const nestedMsg = typeof nested === "string" ? nested : nested?.message;
+  const msg = (nestedMsg || result.error || result.body || "").trim();
+  if (result.status === 401) return msg || "xAI rejected the API key (401). Paste a new key from console.x.ai.";
+  if (result.status === 403) return msg || "xAI forbade this call (403). The key may lack model access or credits.";
+  return msg || `xAI API error ${result.status}`;
+}
+
+function gatewayError(result: NativeResult): AgentTurnResult {
+  return { ok: false, error: describeError(result) };
 }
 
 export async function probeAi(): Promise<{ available: boolean }> {
@@ -95,15 +102,14 @@ export async function agentTurn(input: {
   const messages = input.data?.messages ?? input.messages ?? [];
   if (!nativeHasKey()) return { ok: false, error: NEED_KEY };
   const result = await nativeComplete({
-    model: "grok-4.5",
+    model: "grok-4.6",
     temperature: 0.2,
     max_tokens: 1600,
-    parallel_tool_calls: false,
     tools: TOOL_DEFINITIONS,
     messages,
   });
   if (result.status < 200 || result.status >= 300 || !result.json) {
-    return gatewayError(result.status, result.error);
+    return gatewayError(result);
   }
   const message = result.json.choices?.[0]?.message;
   return {
@@ -120,7 +126,7 @@ export async function researchTopic(input: {
   const query = input.data?.query ?? input.query ?? "";
   if (!nativeHasKey()) return { ok: false, error: NEED_KEY };
   const result = await nativeComplete({
-    model: "grok-4.5",
+    model: "grok-4.6",
     temperature: 0.1,
     max_tokens: 800,
     messages: [
@@ -132,9 +138,8 @@ export async function researchTopic(input: {
       { role: "user", content: query },
     ],
   });
-  if (result.status === 401 || result.status === 403) return { ok: false, error: CREDITS_ERROR };
   if (result.status < 200 || result.status >= 300) {
-    return { ok: false, error: result.error || `xAI API error ${result.status}` };
+    return { ok: false, error: describeError(result) };
   }
   const text = result.json?.choices?.[0]?.message?.content ?? "";
   const parsed = extractJson(text);

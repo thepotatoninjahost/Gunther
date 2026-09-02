@@ -23,7 +23,7 @@ class GuntherBridge(
 
     @JavascriptInterface
     fun setApiKey(key: String) {
-        val trimmed = key.trim()
+        val trimmed = key.trim().removePrefix("Bearer ").trim().trim('"')
         if (trimmed.isBlank()) return
         prefs.edit().putString(KEY, trimmed).commit()
         activity.runOnUiThread {
@@ -47,14 +47,14 @@ class GuntherBridge(
             }
             webView.post {
                 val script =
-                    "window.__guntherNativeDone && window.__guntherNativeDone(${JSONObject.quote(requestId)}, $result);"
+                    "window.__guntherNativeDone && window.__guntherNativeDone(${JSONObject.quote(requestId)}, JSON.parse(${JSONObject.quote(result)}));"
                 webView.evaluateJavascript(script, null)
             }
         }
     }
 
     private fun post(payloadJson: String): String {
-        val apiKey = prefs.getString(KEY, "").orEmpty()
+        val apiKey = prefs.getString(KEY, "").orEmpty().trim().removePrefix("Bearer ").trim()
         if (apiKey.isBlank()) {
             return JSONObject()
                 .put("status", 401)
@@ -67,6 +67,8 @@ class GuntherBridge(
         conn.readTimeout = 55000
         conn.doOutput = true
         conn.setRequestProperty("Content-Type", "application/json")
+        conn.setRequestProperty("Accept", "application/json")
+        conn.setRequestProperty("User-Agent", "Gunther/1.4")
         conn.setRequestProperty("Authorization", "Bearer $apiKey")
         conn.outputStream.use { it.write(payloadJson.toByteArray(Charsets.UTF_8)) }
         val code = conn.responseCode
@@ -74,15 +76,24 @@ class GuntherBridge(
         val body = stream?.bufferedReader(Charsets.UTF_8)?.readText().orEmpty()
         conn.disconnect()
         val json = JSONObject().put("status", code)
+        var detail = "xAI API error $code"
         if (body.isNotBlank()) {
             try {
-                json.put("json", JSONObject(body))
+                val parsed = JSONObject(body)
+                json.put("json", parsed)
+                val err = parsed.optJSONObject("error")
+                val msg = when {
+                    err == null -> parsed.optString("error")
+                    else -> err.optString("message").ifBlank { err.toString() }
+                }
+                if (msg.isNotBlank()) detail = msg
             } catch (_: Exception) {
                 json.put("body", body.take(400))
+                detail = body.take(180)
             }
         }
         if (code !in 200..299) {
-            json.put("error", "xAI API error $code")
+            json.put("error", detail)
         }
         return json.toString()
     }
