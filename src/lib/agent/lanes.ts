@@ -1,6 +1,7 @@
 import type { FileMap } from "./types";
 import type { ProjectWorkspace } from "@/lib/workspace/workspace";
 import type { MutationCoordinator } from "@/lib/workspace/mutations";
+import { projectBrief } from "./project-brief";
 
 export type DirectLane =
   | { handled: true; reply: string; proposalId?: string }
@@ -19,7 +20,7 @@ export async function tryDirectLane(
     return {
       handled: true,
       reply:
-        "Ready. The Pulse Ledger starter is mounted. Ask me to list files, find bugs, or stage a patch — writes still need two owner confirmations.",
+        "Ready. Import a folder or ask me to list files, review the project, find bugs, or stage a patch — writes still need owner confirmation.",
     };
   }
 
@@ -37,25 +38,8 @@ export async function tryDirectLane(
     };
   }
 
-  if (isListing(text)) {
-    const listed = Object.keys(files).sort();
-    const report = workspace.verify();
-    return {
-      handled: true,
-      reply: [
-        listed.length ? listed.join("\n") : "(no files)",
-        "",
-        `Verification: ${report.passed ? "passed" : `FAILED (${report.issues.length} unfinished-work marker(s))`}`,
-        report.passed
-          ? ""
-          : report.issues
-              .slice(0, 12)
-              .map((i) => `- ${i.path}:${i.line} — ${i.message}`)
-              .join("\n"),
-      ]
-        .filter((line) => line !== "")
-        .join("\n"),
-    };
+  if (isListing(text) || isReview(text)) {
+    return { handled: true, reply: projectBrief(workspace, files, text) };
   }
 
   const read = text.match(/^read\s+(\S+)$/i);
@@ -95,6 +79,15 @@ function isStatus(text: string): boolean {
 function isListing(text: string): boolean {
   return /^(list|ls|show files|what files|what'?s in this (project|repo)|what is in this (project|repo)|show (the )?project)\b/i.test(
     text,
+  );
+}
+
+function isReview(text: string): boolean {
+  return (
+    /\b(review|inspect|look over|look at)\b[\s\S]{0,40}\b(project|files|repo|codebase|code)\b/i.test(text) ||
+    /^(review|inspect)\b/i.test(text) ||
+    /\bhow can we improve\b/i.test(text) ||
+    /\bimprove(?:ment)?s?\b[\s\S]{0,40}\b(project|repo|codebase|this)\b/i.test(text)
   );
 }
 
@@ -150,7 +143,7 @@ function reviewLedger(workspace: ProjectWorkspace): string {
     defects.length ? "Defects with evidence:" : "No additional defects matched the starter patterns.",
     ...defects.map((d, i) => `${i + 1}. ${d}`),
     "",
-    "Ask me to patch any of these. The write stages a proposal — two owner confirmations in Review apply it.",
+    "Ask me to patch any of these. The write stages a proposal — owner confirmation in Review applies it.",
   ].join("\n");
 }
 
@@ -195,7 +188,7 @@ async function stageOverdraft(
   return {
     handled: true,
     proposalId: proposed.proposal.id,
-    reply: `Staged a REPLACE on src/ledger.ts. withdraw will reject non-finite, non-positive, and overdraft amounts. Confirm twice in Review (${proposed.proposal.id.slice(-8)}).`,
+    reply: `Staged a REPLACE on src/ledger.ts. withdraw will reject non-finite, non-positive, and overdraft amounts. Confirm in Review (${proposed.proposal.id.slice(-8)}).`,
   };
 }
 
@@ -229,6 +222,6 @@ async function stageFiniteGuard(
   return {
     handled: true,
     proposalId: proposed.proposal.id,
-    reply: `Staged a REPLACE on src/ledger.ts so add rejects non-finite amounts. Confirm twice in Review (${proposed.proposal.id.slice(-8)}).`,
+    reply: `Staged a REPLACE on src/ledger.ts so add rejects non-finite amounts. Confirm in Review (${proposed.proposal.id.slice(-8)}).`,
   };
 }
