@@ -140,7 +140,7 @@ class GuntherBridge(
         const val GROQ = "https://api.groq.com/openai/v1/chat/completions"
         const val OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
         const val GROQ_MODEL = "qwen/qwen3.8-27b"
-        const val OR_MODEL = "qwen/qwen3-coder:free"
+        const val OR_MODEL = "qwen/qwen3-coder-next"
         const val DEFAULT_ENDPOINT = OPENROUTER
         const val DEFAULT_MODEL = OR_MODEL
 

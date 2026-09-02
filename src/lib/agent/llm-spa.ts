@@ -110,11 +110,11 @@ function toTurn(result: NativeResult): AgentTurnResult {
 
 function nativeModel(): string {
   const bridge = native();
-  if (!bridge) return "qwen/qwen3-coder:free";
+  if (!bridge) return "qwen/qwen3-coder-next";
   try {
-    return bridge.getModel() || "qwen/qwen3-coder:free";
+    return bridge.getModel() || "qwen/qwen3-coder-next";
   } catch {
-    return "qwen/qwen3-coder:free";
+    return "qwen/qwen3-coder-next";
   }
 }
 

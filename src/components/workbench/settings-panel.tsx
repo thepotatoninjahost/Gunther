@@ -9,9 +9,9 @@ const GROQ = "https://api.groq.com/openai/v1/chat/completions";
 const OPENROUTER = "https://openrouter.ai/api/v1/chat/completions";
 
 const PRESETS = [
-  { label: "Qwen3 Coder 480B · OpenRouter free", endpoint: OPENROUTER, model: "qwen/qwen3-coder:free" },
   { label: "Qwen3 Coder Next · OpenRouter", endpoint: OPENROUTER, model: "qwen/qwen3-coder-next" },
   { label: "Qwen3 Coder 480B · OpenRouter", endpoint: OPENROUTER, model: "qwen/qwen3-coder" },
+  { label: "Qwen3 Coder Plus · OpenRouter", endpoint: OPENROUTER, model: "qwen/qwen3-coder-plus" },
 ];
 
 function phoneBridge() {
@@ -70,10 +70,10 @@ export function SettingsPanel({
         <div className="mt-4 space-y-4 overflow-y-auto">
           <section className="rounded-lg border border-border bg-raised p-3">
             <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">Gateway</p>
-            <p className="mt-1 text-sm text-fg">Qwen3 Coder models (built for coding agents). Groq does not host a Coder SKU. Use an OpenRouter key (sk-or-).</p>
+            <p className="mt-1 text-sm text-fg">Qwen3 Coder models, IDs checked against OpenRouter’s live catalog. Key is sk-or-.</p>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              These are Qwen3 Coder models, not general chat. Get a free key at openrouter.ai/keys
-              and paste it here. A Groq gsk_ key will not run Coder.
+              The :free Coder slug is gone. These three IDs are live: Coder Next, Coder 480B,
+              Coder Plus. OpenRouter key from openrouter.ai/keys. Groq gsk_ will not run them.
             </p>
             <div className="mt-3 flex flex-col gap-2">
               {PRESETS.map((preset) => (
