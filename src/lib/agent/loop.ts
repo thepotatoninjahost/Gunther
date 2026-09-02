@@ -5,6 +5,8 @@ import { tryDirectLane } from "./lanes";
 import { agentTurn } from "@/lib/agent/llm";
 import { DEFAULT_INSTRUCTION_SHEET, repoMap } from "./prompt";
 import { dispatchTool } from "./tools";
+import { extractToolCalls, isAuthError, isRetryableProviderError, stripThink } from "./model-output";
+import { projectBrief } from "./project-brief";
 
 const MAX_TURNS = 16;
 
@@ -65,16 +67,27 @@ export async function runAgentLoop(
     handlers.onEvent("MODEL", `Turn ${turn + 1}/${MAX_TURNS}`);
     const result = await agentTurn({ data: { messages } });
     if (!result.ok) {
+      if (isAuthError(result.error)) {
+        handlers.onEvent("FAILED", result.error);
+        return { text: result.error, failed: true, proposalId };
+      }
       handlers.onEvent("FAILED", result.error);
-      return { text: result.error, failed: true, proposalId };
+      return {
+        text: localFallback(workspace, files, request, result.error),
+        failed: false,
+        proposalId,
+      };
     }
-    if (result.toolCalls.length) {
+    const toolCalls = result.toolCalls.length
+      ? result.toolCalls
+      : extractToolCalls({}, result.content ?? "");
+    if (toolCalls.length) {
       messages.push({
         role: "assistant",
         content: result.content,
-        tool_calls: result.toolCalls,
+        tool_calls: toolCalls,
       });
-      for (const call of result.toolCalls) {
+      for (const call of toolCalls) {
         handlers.onEvent("TOOL", call.function.name);
         const output = await dispatchTool(call.function.name, call.function.arguments, {
           workspace,
@@ -92,17 +105,34 @@ export async function runAgentLoop(
       }
       continue;
     }
-    lastText = (result.content ?? "").trim();
+    lastText = stripThink(result.content ?? "");
     if (lastText) {
       handlers.onEvent("DONE", "Completed");
       return { text: lastText, failed: false, proposalId };
     }
     handlers.onEvent("FAILED", "Model returned an empty answer");
-    return { text: "The model returned an empty answer. Retry the request.", failed: true, proposalId };
+    return {
+      text: localFallback(workspace, files, request, "The model returned an empty answer."),
+      failed: false,
+      proposalId,
+    };
   }
 
   const fallback =
-    lastText || "Stopped after the turn budget. Evidence is in the log — retry to continue.";
+    lastText || localFallback(workspace, files, request, "Stopped after the turn budget.");
   handlers.onEvent("DONE", "Turn budget reached");
   return { text: fallback, failed: false, proposalId };
+}
+
+function localFallback(
+  workspace: ProjectWorkspace,
+  files: FileMap,
+  request: string,
+  reason: string,
+): string {
+  const brief = projectBrief(workspace, files, request);
+  const note = isRetryableProviderError(reason)
+    ? `Cloud model hop failed (${reason}). Local evidence follows.`
+    : `${reason} Local evidence follows.`;
+  return `${note}\n\n${brief}`;
 }
