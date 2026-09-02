@@ -110,11 +110,11 @@ function toTurn(result: NativeResult): AgentTurnResult {
 
 function nativeModel(): string {
   const bridge = native();
-  if (!bridge) return "qwen/qwen3-32b";
+  if (!bridge) return "openai/gpt-oss-120b";
   try {
-    return bridge.getModel() || "qwen/qwen3-32b";
+    return bridge.getModel() || "openai/gpt-oss-120b";
   } catch {
-    return "qwen/qwen3-32b";
+    return "openai/gpt-oss-120b";
   }
 }
 

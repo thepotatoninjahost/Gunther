@@ -72,55 +72,77 @@ class GuntherBridge(
         if (apiKey.isBlank()) {
             return JSONObject()
                 .put("status", 401)
-                .put("error", "Paste a Groq key in Settings. Free, no card: console.groq.com/keys")
+                .put("error", "Paste a Groq (gsk_) or OpenRouter (sk-or-) key in Settings.")
                 .toString()
         }
-        val endpoint = prefs.getString(ENDPOINT, DEFAULT_ENDPOINT).orEmpty().ifBlank { DEFAULT_ENDPOINT }
+        var endpoint = prefs.getString(ENDPOINT, DEFAULT_ENDPOINT).orEmpty().ifBlank { DEFAULT_ENDPOINT }
         val model = prefs.getString(MODEL, DEFAULT_MODEL).orEmpty().ifBlank { DEFAULT_MODEL }
         val bodyObj = JSONObject(payloadJson)
         bodyObj.put("model", model)
         val bytes = bodyObj.toString().toByteArray(Charsets.UTF_8)
-        val conn = (URL(endpoint).openConnection() as HttpURLConnection)
-        conn.requestMethod = "POST"
-        conn.connectTimeout = 20000
-        conn.readTimeout = 55000
-        conn.doOutput = true
-        conn.setRequestProperty("Content-Type", "application/json")
-        conn.setRequestProperty("Accept", "application/json")
-        conn.setRequestProperty("User-Agent", "Gunther/1.5")
-        conn.setRequestProperty("Authorization", "Bearer $apiKey")
-        conn.outputStream.use { it.write(bytes) }
-        val code = conn.responseCode
-        val stream = if (code in 200..299) conn.inputStream else conn.errorStream
-        val raw = stream?.bufferedReader(Charsets.UTF_8)?.readText().orEmpty()
-        conn.disconnect()
-        val json = JSONObject().put("status", code)
-        var detail = "API error $code"
-        if (raw.isNotBlank()) {
-            try {
-                val parsed = JSONObject(raw)
-                json.put("json", parsed)
-                val err = parsed.optJSONObject("error")
-                val msg = when {
-                    err == null -> parsed.optString("error")
-                    else -> err.optString("message").ifBlank { err.toString() }
-                }
-                if (msg.isNotBlank()) detail = msg
-            } catch (_: Exception) {
-                json.put("body", raw.take(400))
-                detail = raw.take(180)
+        var url = URL(endpoint)
+        repeat(4) {
+            val conn = (url.openConnection() as HttpURLConnection)
+            conn.instanceFollowRedirects = false
+            conn.requestMethod = "POST"
+            conn.connectTimeout = 20000
+            conn.readTimeout = 55000
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Accept", "application/json")
+            conn.setRequestProperty("User-Agent", "Gunther/1.5")
+            conn.setRequestProperty("Authorization", "Bearer $apiKey")
+            if (url.host.contains("openrouter")) {
+                conn.setRequestProperty("HTTP-Referer", "https://github.com/thepotatoninjahost/Gunther")
+                conn.setRequestProperty("X-Title", "Gunther")
             }
+            conn.outputStream.use { it.write(bytes) }
+            val code = conn.responseCode
+            if (code in 301..308) {
+                val loc = conn.getHeaderField("Location")
+                conn.disconnect()
+                if (loc.isNullOrBlank()) {
+                    return JSONObject().put("status", code).put("error", "Redirect with no Location").toString()
+                }
+                url = URL(url, loc)
+                return@repeat
+            }
+            val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+            val raw = stream?.bufferedReader(Charsets.UTF_8)?.readText().orEmpty()
+            conn.disconnect()
+            val json = JSONObject().put("status", code)
+            var detail = "API error $code"
+            if (raw.isNotBlank()) {
+                try {
+                    val parsed = JSONObject(raw)
+                    json.put("json", parsed)
+                    val err = parsed.optJSONObject("error")
+                    val msg = when {
+                        err == null -> parsed.optString("error")
+                        else -> err.optString("message").ifBlank { err.toString() }
+                    }
+                    if (msg.isNotBlank()) detail = msg
+                } catch (_: Exception) {
+                    json.put("body", raw.take(400))
+                    detail = raw.take(180)
+                }
+            }
+            if (code !in 200..299) json.put("error", detail)
+            return json.toString()
         }
-        if (code !in 200..299) json.put("error", detail)
-        return json.toString()
+        return JSONObject().put("status", 0).put("error", "Too many redirects").toString()
     }
 
     companion object {
         private const val KEY = "xai_api_key"
         private const val MODEL = "model_id"
         private const val ENDPOINT = "endpoint"
-        const val DEFAULT_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
-        const val DEFAULT_MODEL = "qwen/qwen3-32b"
+        const val GROQ = "https://api.groq.com/openai/v1/chat/completions"
+        const val OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
+        const val GROQ_MODEL = "openai/gpt-oss-120b"
+        const val OR_MODEL = "openai/gpt-oss-120b:free"
+        const val DEFAULT_ENDPOINT = GROQ
+        const val DEFAULT_MODEL = GROQ_MODEL
 
         @SuppressLint("ApplySharedPref")
         private fun securePrefs(context: Context): SharedPreferences {
