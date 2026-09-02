@@ -47,13 +47,7 @@ class MainActivity : ComponentActivity() {
                 toast("No folder selected")
                 return@registerForActivityResult
             }
-            try {
-                contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                )
-            } catch (_: Exception) {
-            }
+            Disk.saveTree(this, uri)
             thread { pushTree(uri) }
         }
 
@@ -95,7 +89,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             addJavascriptInterface(GuntherBridge(this@MainActivity, this), "GuntherNative")
-            addJavascriptInterface(GuntherFiles(this@MainActivity), "GuntherFiles")
+            addJavascriptInterface(GuntherFiles(this@MainActivity, this), "GuntherFiles")
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(
                     view: WebView,
@@ -156,11 +150,13 @@ class MainActivity : ComponentActivity() {
 
     private fun pushTree(uri: Uri) {
         val (name, files) = ProjectImport.fromTree(this, uri)
+        Disk.materialize(this, files)
         deliver(name, files)
     }
 
     private fun pushUris(uris: List<Uri>) {
         val files = ProjectImport.fromUris(this, uris)
+        Disk.materialize(this, files)
         deliver("imported", files)
     }
 

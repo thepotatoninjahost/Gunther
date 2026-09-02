@@ -69,25 +69,26 @@ export async function runAgentLoop(
       return { text: result.error, failed: true, proposalId };
     }
     if (result.toolCalls.length) {
-      const call = result.toolCalls[0];
-      handlers.onEvent("TOOL", call.function.name);
       messages.push({
         role: "assistant",
         content: result.content,
         tool_calls: result.toolCalls,
       });
-      const output = await dispatchTool(call.function.name, call.function.arguments, {
-        workspace,
-        mutations,
-        request,
-        onProposal: (id) => {
-          proposalId = id;
-          handlers.onProposal(id);
-        },
-      });
-      messages.push({ role: "tool", tool_call_id: call.id, content: output });
-      if (output.startsWith("PROPOSED ")) {
-        handlers.onEvent("APPROVAL", "Change staged — dual owner approval required");
+      for (const call of result.toolCalls) {
+        handlers.onEvent("TOOL", call.function.name);
+        const output = await dispatchTool(call.function.name, call.function.arguments, {
+          workspace,
+          mutations,
+          request,
+          onProposal: (id) => {
+            proposalId = id;
+            handlers.onProposal(id);
+          },
+        });
+        messages.push({ role: "tool", tool_call_id: call.id, content: output });
+        if (output.startsWith("PROPOSED ")) {
+          handlers.onEvent("APPROVAL", "Change staged — Confirm in Review");
+        }
       }
       continue;
     }

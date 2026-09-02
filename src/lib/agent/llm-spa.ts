@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { searchWeb } from "@/lib/native/disk";
 import type { AgentTurnResult, LlmMessage, ResearchHit } from "./types";
 import { TOOL_DEFINITIONS } from "./prompt";
 
@@ -37,6 +38,12 @@ declare global {
     GuntherFiles?: {
       pickFolder: () => void;
       pickFiles: () => void;
+      writeFile: (path: string, content: string) => string;
+      deleteFile: (path: string) => string;
+      hasDisk: () => boolean;
+      runShell: (requestId: string, command: string) => void;
+      searchWeb: (requestId: string, query: string) => void;
+      verify: (requestId: string) => void;
     };
     __guntherNativeDone?: (requestId: string, result: NativeResult) => void;
     __guntherWait?: Record<string, (result: NativeResult) => void>;
@@ -104,7 +111,7 @@ function toTurn(result: NativeResult): AgentTurnResult {
   return {
     ok: true,
     content: message?.content ?? null,
-    toolCalls: (message?.tool_calls ?? []).slice(0, 1),
+    toolCalls: message?.tool_calls ?? [],
   };
 }
 
@@ -147,30 +154,11 @@ export async function researchTopic(input: {
   query?: string;
 }): Promise<{ ok: true; hits: ResearchHit[] } | { ok: false; error: string }> {
   const query = input.data?.query ?? input.query ?? "";
-  if (!nativeHasKey()) return { ok: false, error: NEED_KEY };
-  const result = await nativeComplete({
-    model: nativeModel(),
-    temperature: 0.1,
-    max_tokens: 800,
-    messages: [
-      {
-        role: "system",
-        content:
-          'Return JSON only: {"hits":[{"title":"","excerpt":"","url":""}]}. 3-6 sourced notes. If you lack evidence, return {"hits":[]}. Do not invent URLs; use canonical docs or omit the hit. Fail closed.',
-      },
-      { role: "user", content: query },
-    ],
-  });
-  if (result.status < 200 || result.status >= 300) {
-    return { ok: false, error: describeError(result) };
-  }
-  const text = result.json?.choices?.[0]?.message?.content ?? "";
-  const parsed = extractJson(text);
-  const hits = z
-    .array(z.object({ title: z.string(), excerpt: z.string(), url: z.string() }))
-    .safeParse(parsed?.hits);
-  if (!hits.success) return { ok: true, hits: [] };
-  return { ok: true, hits: hits.data.slice(0, 6) };
+  const result = await searchWeb(query);
+  if (!result.ok) return { ok: false, error: result.error || "Web search failed" };
+  const hits = (result.hits ?? []).filter((h) => h.title || h.excerpt || h.url).slice(0, 8);
+  if (!hits.length) return { ok: false, error: "No web results" };
+  return { ok: true, hits };
 }
 
 function extractJson(text: string): { hits?: unknown } | null {

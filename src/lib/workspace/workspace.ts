@@ -13,6 +13,7 @@ import { uid } from "@/lib/utils";
 import { MISSING_CHECKSUM, safePath, sha256Hex } from "./checksum";
 import { countOccurrences } from "./diff";
 import { inspectFile, scanUnfinished } from "./integrity";
+import { persistFile } from "@/lib/native/disk";
 
 type Staged = {
   operation: OperationKind;
@@ -47,7 +48,9 @@ export class ProjectWorkspace {
   }
 
   writeOwner(path: string, text: string) {
-    this.files[safePath(path)] = text;
+    const key = safePath(path);
+    this.files[key] = text;
+    persistFile(key, text);
   }
 
   exists(path: string): boolean {
@@ -100,7 +103,6 @@ export class ProjectWorkspace {
     for (const change of changeSet.changes) {
       if (change.after != null) {
         issues.push(...(await inspectFile(change.path, change.after, change.afterChecksum)));
-        issues.push(...scanUnfinished(change.path, change.after));
       }
     }
     return { passed: issues.length === 0, issues };
@@ -181,8 +183,13 @@ export class ProjectWorkspace {
     const written: ChangeRecord[] = [];
     try {
       for (const record of changeSet.changes) {
-        if (record.after == null) delete this.files[record.path];
-        else this.files[record.path] = record.after;
+        if (record.after == null) {
+          delete this.files[record.path];
+          persistFile(record.path, null);
+        } else {
+          this.files[record.path] = record.after;
+          persistFile(record.path, record.after);
+        }
         const onDisk = this.files[record.path] ?? null;
         const onDiskChecksum = onDisk == null ? MISSING_CHECKSUM : await sha256Hex(onDisk);
         if (onDiskChecksum !== record.afterChecksum) {

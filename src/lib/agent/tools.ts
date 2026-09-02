@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { MutationCoordinator } from "@/lib/workspace/mutations";
 import type { ProjectWorkspace } from "@/lib/workspace/workspace";
 import { runCommand } from "@/lib/workspace/terminal";
+import { runShell, verifyDisk } from "@/lib/native/disk";
 import { searchKnowledge } from "@/lib/knowledge/search";
 import { clampText } from "@/lib/utils";
 import { researchTopic } from "@/lib/agent/llm";
@@ -81,7 +82,7 @@ export async function dispatchTool(
         );
         if (proposed.kind === "rejected") return `ERROR: ${proposed.reason}`;
         ctx.onProposal(proposed.proposal.id);
-        return `PROPOSED id=${proposed.proposal.id} path=${path} op=REPLACE — awaiting dual owner approval. Do not claim the write landed.`;
+        return `PROPOSED id=${proposed.proposal.id} path=${path} op=REPLACE — awaiting Confirm in Review. Do not claim the write landed.`;
       }
       case "create_file": {
         const { path, text } = CreateArgs.parse(args);
@@ -92,7 +93,7 @@ export async function dispatchTool(
         );
         if (proposed.kind === "rejected") return `ERROR: ${proposed.reason}`;
         ctx.onProposal(proposed.proposal.id);
-        return `PROPOSED id=${proposed.proposal.id} path=${path} op=CREATE — awaiting dual owner approval.`;
+        return `PROPOSED id=${proposed.proposal.id} path=${path} op=CREATE — awaiting Confirm in Review.`;
       }
       case "append_text": {
         const { path, text } = AppendArgs.parse(args);
@@ -103,22 +104,30 @@ export async function dispatchTool(
         );
         if (proposed.kind === "rejected") return `ERROR: ${proposed.reason}`;
         ctx.onProposal(proposed.proposal.id);
-        return `PROPOSED id=${proposed.proposal.id} path=${path} op=APPEND — awaiting dual owner approval.`;
+        return `PROPOSED id=${proposed.proposal.id} path=${path} op=APPEND — awaiting Confirm in Review.`;
       }
       case "run_command": {
         const { command } = CommandArgs.parse(args);
+        const native = await runShell(command);
+        if (native.ok) {
+          return clampText(`exit=${native.exit ?? 0}\n${native.output ?? ""}`.trim(), MAX);
+        }
         const result = runCommand(ctx.workspace.snapshot(), "", command);
         return clampText(
-          `exit=${result.exitCode}\n${result.stdout}\n${result.stderr}`.trim(),
+          `native=${native.error || "unavailable"}\nfallback-memory exit=${result.exitCode}\n${result.stdout}\n${result.stderr}`.trim(),
           MAX,
         );
       }
       case "verify": {
-        const report = ctx.workspace.verify();
-        const issues = report.issues
-          .map((issue) => `${issue.path}:${issue.line}: ${issue.message}`)
-          .join("\n");
-        return clampText(`passed=${report.passed}\n${issues}`, MAX);
+        const native = await verifyDisk();
+        if (native.ok) {
+          const issues = (native.issues ?? []).join("\n");
+          return clampText(
+            `passed=${native.passed}\nchecked=${native.checked ?? 0}\n${issues}`.trim(),
+            MAX,
+          );
+        }
+        return `ERROR: ${native.error || "Verify needs an imported folder on this phone. TODO/FIXME grep is not used as a pass."}`;
       }
       default:
         return `ERROR: Unknown tool '${name}'`;

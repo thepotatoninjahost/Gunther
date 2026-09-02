@@ -94,7 +94,7 @@ export function ChatSurface({
           <Textarea
             value={input}
             onChange={(e) => onInput(e.target.value)}
-            placeholder="Ask Grok to build, fix, or explain…"
+            placeholder="Ask the agent to build, fix, or explain…"
             rows={2}
             enterKeyHint="send"
             autoComplete="off"
