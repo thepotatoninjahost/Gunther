@@ -1,7 +1,12 @@
-import { z } from "zod";
 import { searchWeb } from "@/lib/native/disk";
 import type { AgentTurnResult, LlmMessage, ResearchHit } from "./types";
 import { TOOL_DEFINITIONS } from "./prompt";
+import {
+  extractMessageText,
+  extractToolCalls,
+  isRetryableProviderError,
+  isRetiredCoderId,
+} from "./model-output";
 
 const NEED_KEY = "Paste an OpenRouter key in Settings (sk-or-…). Free: openrouter.ai/keys";
 
@@ -12,6 +17,8 @@ type NativeResult = {
     choices?: {
       message?: {
         content?: string | null;
+        reasoning_content?: string | null;
+        reasoning?: string | null;
         tool_calls?: {
           id: string;
           type: "function";
@@ -93,7 +100,7 @@ function describeError(result: NativeResult): string {
   const nestedMsg = typeof nested === "string" ? nested : nested?.message;
   const msg = (nestedMsg || result.error || result.body || "").trim();
   if (result.status === 401) return msg || "Key rejected (401). Paste an OpenRouter key (sk-or-) from openrouter.ai/keys";
-  if (result.status === 403) return msg || "Forbidden (403). Check the Groq key and model.";
+  if (result.status === 403) return msg || "Forbidden (403). Check the key and model.";
   return msg || `API error ${result.status}`;
 }
 
@@ -108,21 +115,38 @@ export async function probeAi(): Promise<{ available: boolean }> {
 function toTurn(result: NativeResult): AgentTurnResult {
   if (result.status < 200 || result.status >= 300 || !result.json) return gatewayError(result);
   const message = result.json.choices?.[0]?.message;
+  const content = extractMessageText(message);
+  const toolCalls = extractToolCalls(message, content);
   return {
     ok: true,
-    content: message?.content ?? null,
-    toolCalls: message?.tool_calls ?? [],
+    content: content || null,
+    toolCalls,
   };
 }
 
 function nativeModel(): string {
+  const fallback = "poolside/laguna-s-2.1:free";
   const bridge = native();
-  if (!bridge) return "poolside/laguna-s-2.1:free";
+  if (!bridge) return fallback;
   try {
-    return bridge.getModel() || "poolside/laguna-s-2.1:free";
+    const raw = bridge.getModel() || fallback;
+    if (!isRetiredCoderId(raw)) return raw;
+    try {
+      bridge.setGateway("https://openrouter.ai/api/v1/chat/completions", fallback);
+    } catch {
+      /* keep serving the free id even if prefs write fails */
+    }
+    return fallback;
   } catch {
-    return "poolside/laguna-s-2.1:free";
+    return fallback;
   }
+}
+
+function usable(result: NativeResult): boolean {
+  if (result.status < 200 || result.status >= 300 || !result.json) return false;
+  const message = result.json.choices?.[0]?.message;
+  const content = extractMessageText(message);
+  return Boolean(content.trim() || extractToolCalls(message, content).length);
 }
 
 async function completeTurn(messages: LlmMessage[]): Promise<NativeResult> {
@@ -134,8 +158,16 @@ async function completeTurn(messages: LlmMessage[]): Promise<NativeResult> {
   let last: NativeResult = { status: 0, error: "No response" };
   for (const payload of attempts) {
     last = await nativeComplete(payload);
-    if (last.status >= 200 && last.status < 300 && last.json) return last;
+    if (usable(last)) return last;
     if (last.status === 401) return last;
+    const detail = describeError(last);
+    if (!isRetryableProviderError(detail) && last.status >= 200 && last.status < 300) {
+      continue;
+    }
+    if (isRetryableProviderError(detail) || last.status >= 500 || last.status === 429 || last.status === 0) {
+      last = await nativeComplete(payload);
+      if (usable(last)) return last;
+    }
   }
   return last;
 }
@@ -159,15 +191,4 @@ export async function researchTopic(input: {
   const hits = (result.hits ?? []).filter((h) => h.title || h.excerpt || h.url).slice(0, 8);
   if (!hits.length) return { ok: false, error: "No web results" };
   return { ok: true, hits };
-}
-
-function extractJson(text: string): { hits?: unknown } | null {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start < 0 || end <= start) return null;
-  try {
-    return JSON.parse(text.slice(start, end + 1)) as { hits?: unknown };
-  } catch {
-    return null;
-  }
 }
