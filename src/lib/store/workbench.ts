@@ -242,7 +242,7 @@ export const useWorkbench = create<WorkbenchState>()(
                   status: "failed",
                   detail: "That took too long. Try again — there is no try limit.",
                 });
-              }, 70000);
+              }, 180000);
         const engine = getEngine();
         try {
           const result = await runAgentLoop(request, {

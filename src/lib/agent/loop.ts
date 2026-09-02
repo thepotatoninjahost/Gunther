@@ -6,7 +6,7 @@ import { agentTurn } from "@/lib/agent/llm";
 import { DEFAULT_INSTRUCTION_SHEET, repoMap } from "./prompt";
 import { dispatchTool } from "./tools";
 
-const MAX_TURNS = 8;
+const MAX_TURNS = 16;
 
 export type LoopHandlers = {
   onEvent: (phase: string, detail: string) => void;

@@ -16,8 +16,8 @@ object ProjectImport {
         "ogg", "wav", "woff", "woff2", "ttf", "eot", "exe", "dll",
     )
     private const val maxFile = 1_000_000
-    private const val maxFiles = 150
-    private const val maxTotal = 1_500_000
+    private const val maxFiles = 400
+    private const val maxTotal = 8_000_000
 
     fun fromTree(context: Context, tree: Uri): Pair<String, JSONObject> {
         val root = DocumentFile.fromTreeUri(context, tree) ?: return "folder" to JSONObject()

@@ -9,9 +9,9 @@ const GROQ = "https://api.groq.com/openai/v1/chat/completions";
 const OPENROUTER = "https://openrouter.ai/api/v1/chat/completions";
 
 const PRESETS = [
-  { label: "Qwen3 Coder Next · OpenRouter", endpoint: OPENROUTER, model: "qwen/qwen3-coder-next" },
-  { label: "Qwen3 Coder 480B · OpenRouter", endpoint: OPENROUTER, model: "qwen/qwen3-coder" },
-  { label: "Qwen3 Coder Plus · OpenRouter", endpoint: OPENROUTER, model: "qwen/qwen3-coder-plus" },
+  { label: "Laguna S 2.1 · OpenRouter FREE coding agent", endpoint: OPENROUTER, model: "poolside/laguna-s-2.1:free" },
+  { label: "Nemotron Super 120B · OpenRouter FREE", endpoint: OPENROUTER, model: "nvidia/nemotron-3-super-120b-a12b:free" },
+  { label: "GLM 5.2 · OpenRouter FREE", endpoint: OPENROUTER, model: "z-ai/glm-5.2:free" },
 ];
 
 function phoneBridge() {
@@ -70,10 +70,10 @@ export function SettingsPanel({
         <div className="mt-4 space-y-4 overflow-y-auto">
           <section className="rounded-lg border border-border bg-raised p-3">
             <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">Gateway</p>
-            <p className="mt-1 text-sm text-fg">Qwen3 Coder models, IDs checked against OpenRouter’s live catalog. Key is sk-or-.</p>
+            <p className="mt-1 text-sm text-fg">FREE OpenRouter models only ($0 in the live catalog). Key is sk-or-.</p>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              The :free Coder slug is gone. These three IDs are live: Coder Next, Coder 480B,
-              Coder Plus. OpenRouter key from openrouter.ai/keys. Groq gsk_ will not run them.
+              These three IDs are listed at $0 on OpenRouter right now. Laguna S is a coding-agent
+              model. Get a key at openrouter.ai/keys. Groq gsk_ will not run them.
             </p>
             <div className="mt-3 flex flex-col gap-2">
               {PRESETS.map((preset) => (
