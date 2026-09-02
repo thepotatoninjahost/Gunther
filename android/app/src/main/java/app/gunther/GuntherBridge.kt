@@ -37,16 +37,6 @@ class GuntherBridge(
     }
 
     @JavascriptInterface
-    fun pickFolder() {
-        activity.runOnUiThread { activity.openFolderPicker() }
-    }
-
-    @JavascriptInterface
-    fun pickFiles() {
-        activity.runOnUiThread { activity.openFilePicker() }
-    }
-
-    @JavascriptInterface
     fun complete(requestId: String, payloadJson: String) {
         thread(name = "gunther-xai") {
             val result = runCatching { post(payloadJson) }.getOrElse { err ->

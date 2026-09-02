@@ -109,7 +109,7 @@ export class MutationCoordinator {
           v.rule === "SANDBOX_FIRST" ||
           v.rule === "PERMISSION_EXPIRATION",
       );
-      if (candidate.approvals.length < 2 && !hard) {
+      if (candidate.approvals.length < 1 && !hard) {
         return { kind: "awaiting-second", proposal: candidate, approval };
       }
       return {

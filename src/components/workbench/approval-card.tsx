@@ -15,13 +15,10 @@ export function ApprovalCard({
         Code change review
       </p>
       <p className="mt-2 text-sm text-fg">{reason}</p>
-      <p className="mt-1 text-xs text-muted">
-        Two explicit approvals are required before a code transaction can proceed.
-      </p>
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <span className="font-mono text-xs tabular-nums text-muted">{approvalCount}/2</span>
+      <p className="mt-1 text-xs text-muted">Tap Confirm to apply the patch.</p>
+      <div className="mt-3 flex items-center justify-end">
         <Button variant="warn" onClick={onApprove}>
-          {approvalCount === 0 ? "Confirm" : "Confirm again"}
+          Confirm
         </Button>
       </div>
     </div>

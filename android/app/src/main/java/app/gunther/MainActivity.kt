@@ -95,6 +95,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             addJavascriptInterface(GuntherBridge(this@MainActivity, this), "GuntherNative")
+            addJavascriptInterface(GuntherFiles(this@MainActivity), "GuntherFiles")
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(
                     view: WebView,

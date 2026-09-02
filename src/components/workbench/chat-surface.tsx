@@ -13,7 +13,6 @@ export function ChatSurface({
   busy,
   pending,
   onApprove,
-  onLoadSample,
   onImport,
   fileCount,
 }: {
@@ -24,7 +23,6 @@ export function ChatSurface({
   busy: boolean;
   pending: PendingChangeProposal | null;
   onApprove: () => void;
-  onLoadSample: () => void;
   onImport: () => void;
   fileCount: number;
 }) {
@@ -53,46 +51,19 @@ export function ChatSurface({
               Tell it what to build.
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted text-pretty">
-              This is a coding agent, not a piggy-bank toy. Import your files, create new ones, or
-              just type. Grok writes the patch. You confirm it in Review.
+              Import a folder or type a request. Grok writes a patch. You confirm it in Review.
             </p>
             <p className="mt-2 font-mono text-xs text-muted">
               {fileCount ? `${fileCount} file(s) mounted` : "Empty workspace"}
             </p>
-            <div className="mt-6 flex flex-col gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => onSend("What's in this project?")}
-                className="min-h-11 rounded-lg border border-border bg-raised px-4 py-3 text-left text-sm text-fg hover:border-accent/40 disabled:opacity-40"
-              >
-                What's in this project?
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => onSend("Create a file hello.py that prints hello")}
-                className="min-h-11 rounded-lg border border-border bg-raised px-4 py-3 text-left text-sm text-fg hover:border-accent/40 disabled:opacity-40"
-              >
-                Create hello.py
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={onImport}
-                className="min-h-11 rounded-lg border border-border bg-raised px-4 py-3 text-left text-sm text-fg hover:border-accent/40 disabled:opacity-40"
-              >
-                Import files from this phone
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={onLoadSample}
-                className="min-h-11 rounded-lg border border-dashed border-border bg-bg px-4 py-3 text-left text-sm text-muted hover:border-accent/40 disabled:opacity-40"
-              >
-                Optional: load the sample ledger
-              </button>
-            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onImport}
+              className="mt-6 min-h-11 w-full rounded-lg border border-border bg-raised px-4 py-3 text-left text-sm text-fg"
+            >
+              Import files from this phone
+            </button>
           </div>
         ) : (
           <div className="mx-auto flex max-w-2xl flex-col gap-3">
@@ -135,8 +106,7 @@ export function ChatSurface({
               }
             }}
           />
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <p className="text-xs text-muted">Type anything. Tap Send.</p>
+          <div className="mt-2 flex items-center justify-end">
             <Button type="submit" disabled={!input.trim() || busy} className="min-h-11 min-w-28">
               {busy ? "Working" : "Send"}
             </Button>

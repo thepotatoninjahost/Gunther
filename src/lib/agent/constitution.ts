@@ -42,9 +42,7 @@ export type ConstitutionViolation = {
 export const APPROVAL_EXPIRATION_MS = 30 * 60 * 1000;
 
 const DOUBLE_CONFIRM = new Set<AgentActionCategory>([
-  "CODE_CHANGE",
   "MODEL_CHANGE",
-  "SETTINGS_CHANGE",
   "DATA_EXPORT",
   "DATA_SHARE",
 ]);

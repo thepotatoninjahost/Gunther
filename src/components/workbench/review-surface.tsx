@@ -27,7 +27,7 @@ export function ReviewSurface({
         <div className="mt-10 text-center">
           <p className="font-medium text-fg">No pending changes</p>
           <p className="mt-1 text-sm text-muted">
-            When Grok wants to write a file, the patch shows up here. Tap Confirm twice to apply it.
+            When Grok wants to write a file, the patch shows up here. Tap Confirm to apply it.
           </p>
         </div>
       ) : (
@@ -37,7 +37,7 @@ export function ReviewSurface({
           </p>
           <p className="mt-2 text-sm text-fg">{pending.request}</p>
           <p className="mt-1 font-mono text-xs text-muted">
-            verify={pending.verification.passed ? "passed" : "failed"} · {pending.approvals.length}/2
+            verify={pending.verification.passed ? "passed" : "failed"}
             confirmations
           </p>
           <div className="mt-3 flex flex-col gap-3">
@@ -55,7 +55,7 @@ export function ReviewSurface({
               Reject
             </Button>
             <Button variant="warn" onClick={onApprove} className="flex-1">
-              Confirm {pending.approvals.length + 1}/2
+              Confirm
             </Button>
           </div>
         </div>

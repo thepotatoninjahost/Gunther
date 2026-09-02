@@ -36,12 +36,9 @@ export function WorkbenchShell() {
   const instructionSheet = useWorkbench((s) => s.instructionSheet);
 
   const openImport = () => {
-    // Android WebView does not expose Java methods as JS function values.
-    // Checking `.pickFolder` is always false, then a hidden <input> click
-    // is ignored. Call the bridge directly when it exists.
-    const bridge = window.GuntherNative;
-    if (bridge) {
-      bridge.pickFolder();
+    const files = window.GuntherFiles;
+    if (files) {
+      files.pickFolder();
       return;
     }
     fileRef.current?.click();
@@ -121,7 +118,6 @@ export function WorkbenchShell() {
             busy={running}
             pending={pending[0] ?? null}
             onApprove={() => void useWorkbench.getState().approve()}
-            onLoadSample={() => useWorkbench.getState().loadSample()}
             onImport={openImport}
             fileCount={Object.keys(files).length}
           />
