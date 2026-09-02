@@ -95,28 +95,38 @@ export async function probeAi(): Promise<{ available: boolean }> {
   return { available: nativeHasKey() };
 }
 
-export async function agentTurn(input: {
-  data?: { messages: LlmMessage[] };
-  messages?: LlmMessage[];
-}): Promise<AgentTurnResult> {
-  const messages = input.data?.messages ?? input.messages ?? [];
-  if (!nativeHasKey()) return { ok: false, error: NEED_KEY };
-  const result = await nativeComplete({
-    model: "grok-4.6",
-    temperature: 0.2,
-    max_tokens: 1600,
-    tools: TOOL_DEFINITIONS,
-    messages,
-  });
-  if (result.status < 200 || result.status >= 300 || !result.json) {
-    return gatewayError(result);
-  }
+function toTurn(result: NativeResult): AgentTurnResult {
+  if (result.status < 200 || result.status >= 300 || !result.json) return gatewayError(result);
   const message = result.json.choices?.[0]?.message;
   return {
     ok: true,
     content: message?.content ?? null,
     toolCalls: (message?.tool_calls ?? []).slice(0, 1),
   };
+}
+
+async function completeTurn(messages: LlmMessage[]): Promise<NativeResult> {
+  const attempts: unknown[] = [
+    { model: "grok-4.6", temperature: 0.2, max_tokens: 1600, tools: TOOL_DEFINITIONS, messages },
+    { model: "grok-4.6", temperature: 0.2, max_tokens: 1600, messages },
+    { model: "grok-4.5", temperature: 0.2, max_tokens: 1600, messages },
+  ];
+  let last: NativeResult = { status: 0, error: "No response" };
+  for (const payload of attempts) {
+    last = await nativeComplete(payload);
+    if (last.status >= 200 && last.status < 300 && last.json) return last;
+    if (last.status === 401) return last;
+  }
+  return last;
+}
+
+export async function agentTurn(input: {
+  data?: { messages: LlmMessage[] };
+  messages?: LlmMessage[];
+}): Promise<AgentTurnResult> {
+  const messages = input.data?.messages ?? input.messages ?? [];
+  if (!nativeHasKey()) return { ok: false, error: NEED_KEY };
+  return toTurn(await completeTurn(messages));
 }
 
 export async function researchTopic(input: {
