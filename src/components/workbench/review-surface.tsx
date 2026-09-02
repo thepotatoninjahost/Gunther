@@ -27,7 +27,7 @@ export function ReviewSurface({
         <div className="mt-10 text-center">
           <p className="font-medium text-fg">No pending changes</p>
           <p className="mt-1 text-sm text-muted">
-            When Grok wants to write a file, the patch shows up here. Tap Confirm to apply it.
+            When the agent wants to write a file, the patch shows up here. Tap Confirm to apply it.
           </p>
         </div>
       ) : (

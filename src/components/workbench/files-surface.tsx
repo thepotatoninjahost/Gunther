@@ -69,7 +69,7 @@ export function FilesSurface({
       <div>
         <h2 className="font-display text-lg font-semibold text-fg">Project files</h2>
         <p className="mt-1 text-xs text-muted">
-          Your files. Create one here, import from the folder button, or ask Grok to write it.
+          Your files. Create one here, import from the folder button, or ask the agent to write it.
         </p>
       </div>
       <form

@@ -51,7 +51,7 @@ export function ChatSurface({
               Tell it what to build.
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted text-pretty">
-              Import a folder or type a request. Grok writes a patch. You confirm it in Review.
+              Import a folder or type a request. The agent writes a patch. You confirm it in Review.
             </p>
             <p className="mt-2 font-mono text-xs text-muted">
               {fileCount ? `${fileCount} file(s) mounted` : "Empty workspace"}

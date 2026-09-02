@@ -94,7 +94,7 @@ export const useWorkbench = create<WorkbenchState>()(
       instructionSheet: DEFAULT_INSTRUCTION_SHEET,
       tab: "chat",
       status: "ready",
-      detail: "Talk freely — import files or ask Grok to build something",
+      detail: "Talk freely — import files or ask the agent to build something",
       running: false,
       cancelled: false,
       runToken: "",
