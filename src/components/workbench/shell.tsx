@@ -83,8 +83,8 @@ export function WorkbenchShell() {
     aiAvailable == null
       ? "model · checking"
       : aiAvailable
-        ? "gpt-oss-120b · ready"
-        : "gpt-oss-120b · unavailable";
+        ? "qwen3-coder · ready"
+        : "qwen3-coder · unavailable";
 
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-bg text-fg">

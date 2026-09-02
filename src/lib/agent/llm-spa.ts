@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { AgentTurnResult, LlmMessage, ResearchHit } from "./types";
 import { TOOL_DEFINITIONS } from "./prompt";
 
-const NEED_KEY = "Paste a Groq key in Settings. Free, no credit card: console.groq.com/keys";
+const NEED_KEY = "Paste an OpenRouter key in Settings (sk-or-…). Free: openrouter.ai/keys";
 
 type NativeResult = {
   status: number;
@@ -85,7 +85,7 @@ function describeError(result: NativeResult): string {
   const nested = result.json?.error;
   const nestedMsg = typeof nested === "string" ? nested : nested?.message;
   const msg = (nestedMsg || result.error || result.body || "").trim();
-  if (result.status === 401) return msg || "Key rejected (401). Paste a Groq key from console.groq.com/keys";
+  if (result.status === 401) return msg || "Key rejected (401). Paste an OpenRouter key (sk-or-) from openrouter.ai/keys";
   if (result.status === 403) return msg || "Forbidden (403). Check the Groq key and model.";
   return msg || `API error ${result.status}`;
 }
@@ -110,11 +110,11 @@ function toTurn(result: NativeResult): AgentTurnResult {
 
 function nativeModel(): string {
   const bridge = native();
-  if (!bridge) return "openai/gpt-oss-120b";
+  if (!bridge) return "qwen/qwen3-coder:free";
   try {
-    return bridge.getModel() || "openai/gpt-oss-120b";
+    return bridge.getModel() || "qwen/qwen3-coder:free";
   } catch {
-    return "openai/gpt-oss-120b";
+    return "qwen/qwen3-coder:free";
   }
 }
 

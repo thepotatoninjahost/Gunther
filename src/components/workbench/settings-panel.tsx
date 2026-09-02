@@ -9,9 +9,9 @@ const GROQ = "https://api.groq.com/openai/v1/chat/completions";
 const OPENROUTER = "https://openrouter.ai/api/v1/chat/completions";
 
 const PRESETS = [
-  { label: "GPT-OSS 120B · Groq", endpoint: GROQ, model: "openai/gpt-oss-120b" },
-  { label: "GPT-OSS 120B · OpenRouter free", endpoint: OPENROUTER, model: "openai/gpt-oss-120b:free" },
   { label: "Qwen3 Coder 480B · OpenRouter free", endpoint: OPENROUTER, model: "qwen/qwen3-coder:free" },
+  { label: "Qwen3 Coder Next · OpenRouter", endpoint: OPENROUTER, model: "qwen/qwen3-coder-next" },
+  { label: "Qwen3 Coder 480B · OpenRouter", endpoint: OPENROUTER, model: "qwen/qwen3-coder" },
 ];
 
 function phoneBridge() {
@@ -70,10 +70,10 @@ export function SettingsPanel({
         <div className="mt-4 space-y-4 overflow-y-auto">
           <section className="rounded-lg border border-border bg-raised p-3">
             <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">Gateway</p>
-            <p className="mt-1 text-sm text-fg">120B / 480B server models. Groq key starts with gsk_. OpenRouter free key starts with sk-or-.</p>
+            <p className="mt-1 text-sm text-fg">Qwen3 Coder models (built for coding agents). Groq does not host a Coder SKU. Use an OpenRouter key (sk-or-).</p>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              Groq Llama 70B is enterprise-only now — that is why those IDs failed. Use GPT-OSS 120B
-              on Groq with your gsk_ key, or OpenRouter free for 120B / Qwen3 Coder 480B.
+              These are Qwen3 Coder models, not general chat. Get a free key at openrouter.ai/keys
+              and paste it here. A Groq gsk_ key will not run Coder.
             </p>
             <div className="mt-3 flex flex-col gap-2">
               {PRESETS.map((preset) => (
@@ -113,7 +113,7 @@ export function SettingsPanel({
                 <Input
                   type="password"
                   autoComplete="off"
-                  placeholder={model.includes(":free") || model.includes("coder") ? "sk-or-…" : "gsk_…"}
+                  placeholder="sk-or-…"
                   value={keyDraft}
                   onChange={(event) => setKeyDraft(event.target.value)}
                   aria-label="API key"

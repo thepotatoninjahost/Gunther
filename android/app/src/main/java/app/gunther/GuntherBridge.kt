@@ -72,7 +72,7 @@ class GuntherBridge(
         if (apiKey.isBlank()) {
             return JSONObject()
                 .put("status", 401)
-                .put("error", "Paste a Groq (gsk_) or OpenRouter (sk-or-) key in Settings.")
+                .put("error", "Paste an OpenRouter key (sk-or-) in Settings. Coder models are not on Groq.")
                 .toString()
         }
         var endpoint = prefs.getString(ENDPOINT, DEFAULT_ENDPOINT).orEmpty().ifBlank { DEFAULT_ENDPOINT }
@@ -139,10 +139,10 @@ class GuntherBridge(
         private const val ENDPOINT = "endpoint"
         const val GROQ = "https://api.groq.com/openai/v1/chat/completions"
         const val OPENROUTER = "https://openrouter.ai/api/v1/chat/completions"
-        const val GROQ_MODEL = "openai/gpt-oss-120b"
-        const val OR_MODEL = "openai/gpt-oss-120b:free"
-        const val DEFAULT_ENDPOINT = GROQ
-        const val DEFAULT_MODEL = GROQ_MODEL
+        const val GROQ_MODEL = "qwen/qwen3.8-27b"
+        const val OR_MODEL = "qwen/qwen3-coder:free"
+        const val DEFAULT_ENDPOINT = OPENROUTER
+        const val DEFAULT_MODEL = OR_MODEL
 
         @SuppressLint("ApplySharedPref")
         private fun securePrefs(context: Context): SharedPreferences {
