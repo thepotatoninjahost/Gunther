@@ -22,23 +22,37 @@ class GuntherBridge(
     fun hasKey(): Boolean = !prefs.getString(KEY, "").isNullOrBlank()
 
     @JavascriptInterface
+    fun getModel(): String = prefs.getString(MODEL, DEFAULT_MODEL).orEmpty()
+
+    @JavascriptInterface
+    fun getEndpoint(): String = prefs.getString(ENDPOINT, DEFAULT_ENDPOINT).orEmpty()
+
+    @JavascriptInterface
+    fun setGateway(endpoint: String, model: String) {
+        prefs.edit()
+            .putString(ENDPOINT, endpoint.trim())
+            .putString(MODEL, model.trim())
+            .commit()
+    }
+
+    @JavascriptInterface
     fun setApiKey(key: String) {
         val trimmed = key.trim().removePrefix("Bearer ").trim().trim('"')
         if (trimmed.isBlank()) return
         prefs.edit().putString(KEY, trimmed).commit()
         activity.runOnUiThread {
-            android.widget.Toast.makeText(activity, "API key saved", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(activity, "Key saved", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
     @JavascriptInterface
     fun clearApiKey() {
-        prefs.edit().remove(KEY).apply()
+        prefs.edit().remove(KEY).commit()
     }
 
     @JavascriptInterface
     fun complete(requestId: String, payloadJson: String) {
-        thread(name = "gunther-xai") {
+        thread(name = "gunther-llm") {
             val result = runCatching { post(payloadJson) }.getOrElse { err ->
                 JSONObject()
                     .put("status", 0)
@@ -58,28 +72,33 @@ class GuntherBridge(
         if (apiKey.isBlank()) {
             return JSONObject()
                 .put("status", 401)
-                .put("error", "Add your xAI API key in Settings.")
+                .put("error", "Paste a Groq key in Settings. Free, no card: console.groq.com/keys")
                 .toString()
         }
-        val conn = (URL("https://api.x.ai/v1/chat/completions").openConnection() as HttpURLConnection)
+        val endpoint = prefs.getString(ENDPOINT, DEFAULT_ENDPOINT).orEmpty().ifBlank { DEFAULT_ENDPOINT }
+        val model = prefs.getString(MODEL, DEFAULT_MODEL).orEmpty().ifBlank { DEFAULT_MODEL }
+        val bodyObj = JSONObject(payloadJson)
+        bodyObj.put("model", model)
+        val bytes = bodyObj.toString().toByteArray(Charsets.UTF_8)
+        val conn = (URL(endpoint).openConnection() as HttpURLConnection)
         conn.requestMethod = "POST"
         conn.connectTimeout = 20000
         conn.readTimeout = 55000
         conn.doOutput = true
         conn.setRequestProperty("Content-Type", "application/json")
         conn.setRequestProperty("Accept", "application/json")
-        conn.setRequestProperty("User-Agent", "Gunther/1.4")
+        conn.setRequestProperty("User-Agent", "Gunther/1.5")
         conn.setRequestProperty("Authorization", "Bearer $apiKey")
-        conn.outputStream.use { it.write(payloadJson.toByteArray(Charsets.UTF_8)) }
+        conn.outputStream.use { it.write(bytes) }
         val code = conn.responseCode
         val stream = if (code in 200..299) conn.inputStream else conn.errorStream
-        val body = stream?.bufferedReader(Charsets.UTF_8)?.readText().orEmpty()
+        val raw = stream?.bufferedReader(Charsets.UTF_8)?.readText().orEmpty()
         conn.disconnect()
         val json = JSONObject().put("status", code)
-        var detail = "xAI API error $code"
-        if (body.isNotBlank()) {
+        var detail = "API error $code"
+        if (raw.isNotBlank()) {
             try {
-                val parsed = JSONObject(body)
+                val parsed = JSONObject(raw)
                 json.put("json", parsed)
                 val err = parsed.optJSONObject("error")
                 val msg = when {
@@ -88,18 +107,20 @@ class GuntherBridge(
                 }
                 if (msg.isNotBlank()) detail = msg
             } catch (_: Exception) {
-                json.put("body", body.take(400))
-                detail = body.take(180)
+                json.put("body", raw.take(400))
+                detail = raw.take(180)
             }
         }
-        if (code !in 200..299) {
-            json.put("error", detail)
-        }
+        if (code !in 200..299) json.put("error", detail)
         return json.toString()
     }
 
     companion object {
         private const val KEY = "xai_api_key"
+        private const val MODEL = "model_id"
+        private const val ENDPOINT = "endpoint"
+        const val DEFAULT_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
+        const val DEFAULT_MODEL = "qwen/qwen3-32b"
 
         @SuppressLint("ApplySharedPref")
         private fun securePrefs(context: Context): SharedPreferences {

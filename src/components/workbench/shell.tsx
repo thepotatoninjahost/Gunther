@@ -83,8 +83,8 @@ export function WorkbenchShell() {
     aiAvailable == null
       ? "model · checking"
       : aiAvailable
-        ? "grok-4.5 · ready"
-        : "grok-4.5 · unavailable";
+        ? "qwen3-32b · ready"
+        : "qwen3-32b · unavailable";
 
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-bg text-fg">

@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { AgentTurnResult, LlmMessage, ResearchHit } from "./types";
 import { TOOL_DEFINITIONS } from "./prompt";
 
-const NEED_KEY = "Add your xAI API key in Settings (the gear).";
+const NEED_KEY = "Paste a Groq key in Settings. Free, no credit card: console.groq.com/keys";
 
 type NativeResult = {
   status: number;
@@ -29,6 +29,9 @@ declare global {
       hasKey: () => boolean;
       setApiKey: (key: string) => void;
       clearApiKey: () => void;
+      getModel: () => string;
+      getEndpoint: () => string;
+      setGateway: (endpoint: string, model: string) => void;
       complete: (requestId: string, payloadJson: string) => void;
     };
     GuntherFiles?: {
@@ -82,9 +85,9 @@ function describeError(result: NativeResult): string {
   const nested = result.json?.error;
   const nestedMsg = typeof nested === "string" ? nested : nested?.message;
   const msg = (nestedMsg || result.error || result.body || "").trim();
-  if (result.status === 401) return msg || "xAI rejected the API key (401). Paste a new key from console.x.ai.";
-  if (result.status === 403) return msg || "xAI forbade this call (403). The key may lack model access or credits.";
-  return msg || `xAI API error ${result.status}`;
+  if (result.status === 401) return msg || "Key rejected (401). Paste a Groq key from console.groq.com/keys";
+  if (result.status === 403) return msg || "Forbidden (403). Check the Groq key and model.";
+  return msg || `API error ${result.status}`;
 }
 
 function gatewayError(result: NativeResult): AgentTurnResult {
@@ -105,11 +108,21 @@ function toTurn(result: NativeResult): AgentTurnResult {
   };
 }
 
+function nativeModel(): string {
+  const bridge = native();
+  if (!bridge) return "qwen/qwen3-32b";
+  try {
+    return bridge.getModel() || "qwen/qwen3-32b";
+  } catch {
+    return "qwen/qwen3-32b";
+  }
+}
+
 async function completeTurn(messages: LlmMessage[]): Promise<NativeResult> {
+  const model = nativeModel();
   const attempts: unknown[] = [
-    { model: "grok-4.6", temperature: 0.2, max_tokens: 1600, tools: TOOL_DEFINITIONS, messages },
-    { model: "grok-4.6", temperature: 0.2, max_tokens: 1600, messages },
-    { model: "grok-4.5", temperature: 0.2, max_tokens: 1600, messages },
+    { model, temperature: 0.2, max_tokens: 1600, tools: TOOL_DEFINITIONS, messages },
+    { model, temperature: 0.2, max_tokens: 1600, messages },
   ];
   let last: NativeResult = { status: 0, error: "No response" };
   for (const payload of attempts) {
@@ -136,7 +149,7 @@ export async function researchTopic(input: {
   const query = input.data?.query ?? input.query ?? "";
   if (!nativeHasKey()) return { ok: false, error: NEED_KEY };
   const result = await nativeComplete({
-    model: "grok-4.6",
+    model: nativeModel(),
     temperature: 0.1,
     max_tokens: 800,
     messages: [
